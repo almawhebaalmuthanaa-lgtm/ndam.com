@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جامعة الأهلية - النظام المتكامل</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d);min-height:100vh;padding:20px}
+.container{max-width:1200px;margin:0 auto;background:rgba(255,255,255,0.95);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden}
+.header{background:linear-gradient(135deg,#1a2a6c,#2d4a8c);color:white;padding:30px;text-align:center}
+.header h1{font-size:2.2em;margin-bottom:10px}
+.nav-tabs{display:flex;background:#f8f9fa;border-bottom:3px solid #1a2a6c;flex-wrap:wrap}
+.nav-tab{flex:1;min-width:130px;padding:15px 15px;border:none;background:none;cursor:pointer;font-size:0.95em;font-weight:bold;color:#555;transition:all 0.3s;position:relative}
+.nav-tab:hover{background:#e9ecef;color:#1a2a6c}
+.nav-tab.active{background:#1a2a6c;color:white}
+.nav-tab .badge{position:absolute;top:5px;left:5px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.75em;display:flex;align-items:center;justify-content:center}
+.content{padding:30px;min-height:500px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn 0.5s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.card{background:white;border-radius:15px;padding:25px;margin-bottom:20px;box-shadow:0 5px 15px rgba(0,0,0,0.08);border-right:4px solid #1a2a6c}
+.card h3{color:#1a2a6c;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid #eee}
+.form-group{margin-bottom:15px}
+.form-group label{display:block;margin-bottom:5px;font-weight:bold;color:#333}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;transition:border-color 0.3s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#1a2a6c;outline:none}
+.btn{padding:12px 30px;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:bold;transition:all 0.3s;margin:5px}
+.btn-primary{background:linear-gradient(135deg,#1a2a6c,#2d4a8c);color:white}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(26,42,108,0.4)}
+.btn-success{background:linear-gradient(135deg,#28a745,#34ce57);color:white}
+.btn-danger{background:linear-gradient(135deg,#dc3545,#e74c3c);color:white}
+.btn-warning{background:linear-gradient(135deg,#ffc107,#ffdb4d);color:#333}
+.btn-info{background:linear-gradient(135deg,#17a2b8,#2bc4d8);color:white}
+.btn-secondary{background:linear-gradient(135deg,#6c757d,#868e96);color:white}
+.table-container{overflow-x:auto;margin-top:20px}
+table{width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden}
+th{background:#1a2a6c;color:white;padding:15px;text-align:right}
+td{padding:12px 15px;border-bottom:1px solid #eee}
+tr:hover{background:#f8f9fa}
+.status-active{color:#28a745;font-weight:bold}
+.status-expired{color:#dc3545;font-weight:bold}
+.status-pending{color:#fd7e14;font-weight:bold}
+.alert{padding:15px;border-radius:10px;margin-bottom:15px;display:flex;align-items:center;gap:10px}
+.alert-danger{background:#f8d7da;color:#721c24;border-right:4px solid #dc3545}
+.alert-warning{background:#fff3cd;color:#856404;border-right:4px solid #ffc107}
+.alert-success{background:#d4edda;color:#155724;border-right:4px solid #28a745}
+.alert-info{background:#d1ecf1;color:#0c5460;border-right:4px solid #17a2b8}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+.stat-card{background:linear-gradient(135deg,#1a2a6c,#2d4a8c);color:white;padding:25px;border-radius:15px;text-align:center}
+.stat-card h4{font-size:2em;margin-bottom:5px}
+.message-card{background:#f8f9fa;border-radius:10px;padding:15px;margin-bottom:10px;border-right:4px solid #1a2a6c}
+.message-card.high-priority{border-right-color:#dc3545;background:#fff5f5}
+.message-card.auto-msg{border-right-color:#28a745;background:#f0fff4}
+.message-header{display:flex;justify-content:space-between;margin-bottom:10px;font-size:0.9em;color:#666}
+.search-box{display:flex;gap:10px;margin-bottom:20px}
+.search-box input{flex:1;padding:12px;border:2px solid #e0e0e0;border-radius:8px}
+.ledger-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:20px 0}
+.ledger-box{background:#f8f9fa;padding:20px;border-radius:10px;text-align:center}
+.ledger-box h4{color:#1a2a6c;margin-bottom:10px}
+.ledger-box .amount{font-size:1.5em;font-weight:bold}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal-content{background:white;padding:30px;border-radius:15px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto}
+.login-screen{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d)}
+.login-box{background:white;padding:40px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:450px;text-align:center}
+.login-box h2{color:#1a2a6c;margin-bottom:10px}
+.login-box .logo{font-size:4em;margin-bottom:10px}
+.role-badge{display:inline-block;padding:5px 15px;border-radius:20px;font-size:0.85em;font-weight:bold;margin:5px}
+.role-admin{background:#dc3545;color:white}
+.role-dept{background:#fd7e14;color:white}
+.role-registrar{background:#6f42c1;color:white}
+.role-finance{background:#20c997;color:white}
+.role-accounting{background:#0dcaf0;color:#333}
+.role-college{background:#6610f2;color:white}
+.user-bar{background:#f8f9fa;padding:10px 30px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dee2e6}
+.user-info{display:flex;align-items:center;gap:10px}
+.permission-denied{text-align:center;padding:60px 20px;color:#dc3545}
+.permission-denied h2{font-size:3em;margin-bottom:20px}
+.ip-info{background:#e7f3ff;border:1px solid #b3d9ff;border-radius:8px;padding:10px;margin-bottom:15px;font-size:0.9em;color:#004085}
+.view-only-banner{background:linear-gradient(90deg,#6610f2,#7c3aed);color:white;padding:10px 20px;border-radius:8px;margin-bottom:15px;text-align:center;font-weight:bold}
+.college-students{background:#f8f9fa;border-radius:10px;padding:15px;margin-bottom:10px;border-right:4px solid #6610f2}
+.college-header{background:#6610f2;color:white;padding:10px 15px;border-radius:8px 8px 0 0;margin:-15px -15px 15px -15px;font-weight:bold}
+.hidden{display:none!important}
+@media(max-width:768px){.nav-tab{min-width:100%}.ledger-summary{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr}.user-bar{flex-direction:column;gap:10px}}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<div class="logo">🏛️</div>
+<h2>جامعة الأهلية</h2>
+<p style="color:#666;margin-bottom:25px;">النظام المتكامل - تسجيل الدخول</p>
+<div id="ipNotice" class="ip-info hidden"></div>
+<form id="loginForm" onsubmit="doLogin(event)">
+<div class="form-group">
+<label>اسم المستخدم</label>
+<input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم" required>
+</div>
+<div class="form-group">
+<label>رمز الدخول</label>
+<input type="password" id="loginPassword" placeholder="أدخل رمز الدخول" required>
+</div>
+<button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">🔐 دخول</button>
+</form>
+<div style="margin-top:25px;padding-top:20px;border-top:1px solid #eee;">
+<p style="font-size:0.85em;color:#888;margin-bottom:10px;">الأدوار المتاحة:</p>
+<span class="role-badge role-admin">مدير النظام</span>
+<span class="role-badge role-dept">رئيس قسم</span>
+<span class="role-badge role-registrar">مدير تسجيل</span>
+<span class="role-badge role-finance">مدير المالية</span>
+<span class="role-badge role-accounting">حاسبة</span>
+<span class="role-badge role-college">كلية</span>
+</div>
+<div style="margin-top:15px;padding:10px;background:#f8f9fa;border-radius:8px;font-size:0.8em;color:#666;text-align:right;">
+<p style="margin-bottom:5px;font-weight:bold;">🔑 بيانات الدخول الافتراضية:</p>
+<p>admin / admin123 (مدير النظام)</p>
+<p>registrar / reg2026 (مدير تسجيل)</p>
+<p>finance / fin2026 (مدير مالية)</p>
+<p>college_dentistry / col2026 (كلية طب الأسنان - مشاهدة فقط)</p>
+<p>college_eng / col2026e (كلية الهندسة - مشاهدة فقط)</p>
+</div>
+<div id="loginError" style="margin-top:15px;color:#dc3545;font-weight:bold;"></div>
+</div>
+</div>
+
+<!-- Main App -->
+<div id="mainApp" class="hidden">
+<div class="container">
+<div class="header">
+<h1>🏛️ جامعة الأهلية</h1>
+<p>النظام المتكامل لتسجيل الطلبة والإدارة المالية والأرشفة والتواصل</p>
+<p style="margin-top:10px;font-size:0.9em;opacity:0.8">Al-Ahliya University Integrated Management System</p>
+</div>
+
+<div class="user-bar">
+<div class="user-info">
+<span style="font-size:1.5em;">👤</span>
+<div>
+<div id="currentUserName" style="font-weight:bold;"></div>
+<div id="currentUserRole" style="font-size:0.85em;color:#666;"></div>
+</div>
+</div>
+<div>
+<span id="currentIP" style="font-size:0.8em;color:#888;margin-left:10px;"></span>
+<button class="btn btn-secondary" onclick="logout()" style="padding:8px 20px;font-size:0.9em;">🚪 خروج</button>
+</div>
+</div>
+
+<div class="nav-tabs" id="navTabs">
+<button class="nav-tab active" onclick="showSection('dashboard')" data-perm="dashboard">📊 لوحة التحكم</button>
+<button class="nav-tab" onclick="showSection('students')" data-perm="students">👨‍🎓 الطلاب</button>
+<button class="nav-tab" onclick="showSection('payments')" data-perm="payments">💰 المالية</button>
+<button class="nav-tab" onclick="showSection('letters')" data-perm="letters">📜 الأرشيف</button>
+<button class="nav-tab" onclick="showSection('messages')" data-perm="messages">✉️ التواصل</button>
+<button class="nav-tab" onclick="showSection('alerts')" data-perm="alerts">⚠️ الإنذارات <span class="badge" id="alertBadge">0</span></button>
+<button class="nav-tab hidden" id="adminTab" onclick="showSection('admin')" data-perm="admin">⚙️ إدارة النظام</button>
+<button class="nav-tab hidden" id="collegeTab" onclick="showSection('collegeView')" data-perm="college">🏛️ الكلية</button>
+</div>
+
+<div class="content">
+
+<!-- Dashboard -->
+<div id="dashboard" class="section active">
+<div class="stats-grid">
+<div class="stat-card"><h4 id="statStudents">0</h4><p>الطلاب المسجلين</p></div>
+<div class="stat-card"><h4 id="statPayments">0</h4><p>إجمالي المدفوعات (د.ع)</p></div>
+<div class="stat-card"><h4 id="statLetters">0</h4><p>الكتب المؤرشفة</p></div>
+<div class="stat-card"><h4 id="statMessages">0</h4><p>الرسائل الداخلية</p></div>
+</div>
+<div class="card"><h3>📈 ملخص سريع</h3><div id="dashboardAlerts"></div></div>
+</div>
+
+<!-- Students -->
+<div id="students" class="section">
+<div class="card" id="studentRegisterCard">
+<h3>📝 تسجيل طالب جديد</h3>
+<form id="studentForm" onsubmit="registerStudent(event)">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+<div class="form-group"><label>رقم التسجيل</label><input type="text" id="stuId" placeholder="STU-XXXX" required></div>
+<div class="form-group"><label>الاسم الرباعي</label><input type="text" id="stuName" required></div>
+<div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="stuEmail"></div>
+<div class="form-group"><label>رقم الهاتف</label><input type="text" id="stuPhone" placeholder="07XXXXXXXX"></div>
+<div class="form-group"><label>الرقم الوطني</label><input type="text" id="stuNatId"></div>
+<div class="form-group"><label>القسم</label><select id="stuDept" required><option value="">اختر القسم</option></select></div>
+<div class="form-group"><label>الدراسة</label><select id="stuShift" required><option value="صباحي">صباحي</option><option value="مسائي">مسائي</option></select></div>
+<div class="form-group"><label>القسط الإجمالي (د.ع)</label><input type="number" id="stuFee" required></div>
+</div>
+<div style="margin-top:15px;">
+<label style="font-weight:bold;margin-bottom:10px;display:block;">📄 المستمسكات:</label>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+<div class="form-group"><label>تاريخ انتهاء الوطنية</label><input type="date" id="docNatExpiry"></div>
+<div class="form-group"><label>تاريخ انتهاء الفحص الطبي</label><input type="date" id="docMedExpiry"></div>
+</div>
+</div>
+<button type="submit" class="btn btn-primary" style="margin-top:15px;">✔ تسجيل الطالب</button>
+</form>
+</div>
+<div class="card">
+<h3>🔍 البحث عن طالب</h3>
+<div class="search-box">
+<input type="text" id="searchStudent" placeholder="رقم الطالب أو الاسم...">
+<button class="btn btn-info" onclick="searchStudent()">بحث</button>
+<button class="btn btn-primary" onclick="loadAllStudents()">عرض الكل</button>
+</div>
+<div id="studentResults"></div>
+</div>
+</div>
+
+<!-- Payments -->
+<div id="payments" class="section">
+<div class="card" id="paymentRegisterCard">
+<h3>💵 تسجيل دفعة مالية</h3>
+<form id="paymentForm" onsubmit="addPayment(event)">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+<div class="form-group"><label>رقم الطالب</label><input type="text" id="payStuId" required></div>
+<div class="form-group"><label>المبلغ (د.ع)</label><input type="number" id="payAmount" required></div>
+<div class="form-group"><label>رقم الوصل الورقي</label><input type="text" id="payReceipt" required></div>
+<div class="form-group"><label>الفئة</label><select id="payCat"><option value="tuition">قسط دراسي</option><option value="registration">تسجيل</option><option value="fine">غرامة</option></select></div>
+<div class="form-group"><label>طريقة الدفع</label><select id="payMethod"><option value="نقدي">نقدي</option><option value="زين كاش">زين كاش</option><option value="مصرف">مصرف</option><option value="حوالة مصرفية">حوالة مصرفية</option></select></div>
+</div>
+<button type="submit" class="btn btn-success" style="margin-top:15px;">✔ تسجيل الدفع</button>
+</form>
+</div>
+<div class="card">
+<h3>📋 كشف حساب طالب</h3>
+<div class="search-box">
+<input type="text" id="ledgerStuId" placeholder="رقم الطالب (STU-XXXX)">
+<button class="btn btn-info" onclick="showLedger()">عرض الكشف</button>
+</div>
+<div id="ledgerResult"></div>
+</div>
+</div>
+
+<!-- Letters -->
+<div id="letters" class="section">
+<div class="card" id="letterArchiveCard">
+<h3>📜 أرشفة كتاب رسمي جديد</h3>
+<form id="letterForm" onsubmit="archiveLetter(event)">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+<div class="form-group"><label>الرقم الإداري</label><input type="text" id="letNum" placeholder="مثال: ت/412" required></div>
+<div class="form-group"><label>الموضوع</label><input type="text" id="letTitle" required></div>
+<div class="form-group"><label>الجهة الصادرة</label><input type="text" id="letSource" placeholder="وزارة التعليم العالي"></div>
+<div class="form-group"><label>الجهة الموجه إليها</label><input type="text" id="letDest" placeholder="مركز التسجيل"></div>
+<div class="form-group"><label>تاريخ الصدور</label><input type="date" id="letIssued" required></div>
+<div class="form-group"><label>تاريخ انتهاء الصلاحية</label><input type="date" id="letExpiry" required></div>
+<div class="form-group"><label>التصنيف</label><select id="letCat"><option value="وزاري">وزاري</option><option value="أمر إداري">أمر إداري</option><option value="تعميم">تعميم</option></select></div>
+</div>
+<div class="form-group"><label>ملخص نص الكتاب</label><textarea id="letSummary" rows="3"></textarea></div>
+<button type="submit" class="btn btn-primary">✔ حفظ وأرشفة</button>
+</form>
+</div>
+<div class="card">
+<h3>📚 الأرشيف المركزي</h3>
+<button class="btn btn-info" onclick="loadAllLetters()">🔄 تحديث القائمة</button>
+<div class="table-container" id="lettersTable"></div>
+</div>
+</div>
+
+<!-- Messages -->
+<div id="messages" class="section">
+<div class="card">
+<h3>✉️ إرسال رسالة داخلية</h3>
+<form id="messageForm" onsubmit="sendMessage(event)">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+<div class="form-group"><label>الجهة المرسلة</label><input type="text" id="msgSender" required></div>
+<div class="form-group"><label>المستلم</label><input type="text" id="msgReceiver" placeholder="شؤون التسجيل والحسابات" required></div>
+<div class="form-group"><label>الأولوية</label><select id="msgPriority"><option value="عادي">عادي</option><option value="عالي">عالي</option></select></div>
+</div>
+<div class="form-group"><label>الموضوع</label><input type="text" id="msgSubject" required></div>
+<div class="form-group"><label>نص الرسالة</label><textarea id="msgContent" rows="4" required></textarea></div>
+<button type="submit" class="btn btn-primary">✔ إرسال</button>
+</form>
+</div>
+<div class="card">
+<h3>📥 صندوق الوارد</h3>
+<div class="search-box">
+<input type="text" id="msgRole" placeholder="المسمى الوظيفي">
+<button class="btn btn-info" onclick="loadMessages()">عرض الرسائل</button>
+</div>
+<div id="messagesList"></div>
+</div>
+</div>
+
+<!-- Alerts -->
+<div id="alerts" class="section">
+<div class="card">
+<h3>⚠️ فحص صلاحية النظام والإنذارات المبكرة</h3>
+<button class="btn btn-warning" onclick="runFullCheck()">🔍 تشغيل الفحص الشامل</button>
+<div id="alertsResult" style="margin-top:20px;"></div>
+</div>
+</div>
+
+<!-- College View -->
+<div id="collegeView" class="section">
+<div class="view-only-banner">🏛️ وضع المشاهدة فقط - لا يمكن التعديل</div>
+<div class="card">
+<h3>📋 طلاب الكلية المسجلين</h3>
+<div id="collegeStudentsList"></div>
+</div>
+<div class="card">
+<h3>📨 رسائل التسجيل الواردة</h3>
+<div id="collegeMessages"></div>
+</div>
+<div class="card">
+<h3>📊 إحصائيات الكلية</h3>
+<div id="collegeStats"></div>
+</div>
+</div>
+
+<!-- Admin -->
+<div id="admin" class="section">
+<div class="card">
+<h3>🏛️ إدارة الكليات</h3>
+<form id="collegeForm" onsubmit="addCollege(event)">
+<h4 style="margin:20px 0 15px;color:#1a2a6c;">➕ إضافة كلية جديدة</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
+<div class="form-group"><label>رمز الكلية</label><input type="text" id="newCollegeId" placeholder="dentistry" required></div>
+<div class="form-group"><label>اسم الكلية</label><input type="text" id="newCollegeName" placeholder="كلية طب الأسنان" required></div>
+<div class="form-group"><label>الوصف</label><input type="text" id="newCollegeDesc" placeholder="وصف الكلية"></div>
+</div>
+<button type="submit" class="btn btn-success">✔ إضافة كلية</button>
+</form>
+<div style="margin-top:20px;">
+<h4 style="color:#1a2a6c;margin-bottom:15px;">📋 الكليات المسجلة</h4>
+<div id="collegesList"></div>
+</div>
+</div>
+<div class="card">
+<h3>👥 إدارة الموظفين والمستخدمين</h3>
+<div id="adminPermissionNotice"></div>
+<div class="card" style="background:#fff3cd;border-right-color:#ffc107;">
+<h4>🌐 إدارة IP الحاسبات</h4>
+<p>كمدير نظام، يمكنك:</p>
+<ul style="margin-right:20px;margin-top:10px;">
+<li>✅ <strong>تسجيل الدخول بأي حساب</strong> (تجاوز قيود IP تلقائياً)</li>
+<li>تعيين IP لكل حاسبة عند إضافتها أو تعديلها</li>
+<li>تغيير IP أي موظف من جدول الموظفين (زر 🌐)</li>
+<li>الحاسبة <strong>لا تستطيع</strong> الدخول بدون IP مُدخل منك</li>
+<li>إذا تركت IP فارغاً، لن يتمكن الحساب من الدخول</li>
+</ul>
+</div>
+<form id="userForm" onsubmit="addUser(event)">
+<h4 style="margin:20px 0 15px;color:#1a2a6c;">➕ إضافة مستخدم جديد</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
+<div class="form-group"><label>الاسم الكامل</label><input type="text" id="newUserName" required></div>
+<div class="form-group"><label>اسم المستخدم</label><input type="text" id="newUserUsername" required></div>
+<div class="form-group"><label>رمز الدخول</label><input type="text" id="newUserPassword" required></div>
+<div class="form-group"><label>الدور الوظيفي</label><select id="newUserRole" onchange="onRoleChange()" required><option value="">اختر الدور</option><option value="admin">مدير النظام</option><option value="dept_head">رئيس قسم</option><option value="registrar">مدير تسجيل شؤون الطلبة</option><option value="finance_manager">مدير المالية</option><option value="accounting">حاسبة</option><option value="college">كلية (مشاهدة فقط)</option></select></div>
+<div class="form-group"><label>القسم/الكلية</label><select id="newUserDept"><option value="">بدون</option></select></div>
+<div class="form-group"><label>IP الجهاز المسموح (للحاسبة فقط - يُدخل من مدير النظام)</label><input type="text" id="newUserIP" placeholder="192.168.1.100 - يترك فارغاً إذا لم يكن حاسبة"><small style='color:#666;display:block;margin-top:5px;'>⚠️ يتحكم مدير النظام في هذا الحقل - الحاسبة لا تستطيع الدخول بدونه</small></div>
+</div>
+<button type="submit" class="btn btn-success">✔ إضافة مستخدم</button>
+</form>
+</div>
+<div class="card">
+<h3>🔐 تغيير رموز الدخول</h3>
+<div id="usersList"></div>
+</div>
+<div class="card">
+<h3>📋 سجل العمليات</h3>
+<div id="auditLog"></div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+<div class="modal-content">
+<div id="modalBody"></div>
+<button class="btn btn-danger" onclick="closeModal()" style="margin-top:15px;">إغلاق</button>
+</div>
+</div>
+
+<script>
+// ==================== GLOBALS ====================
+let db = null;
+let SQL = null;
+let currentUser = null;
+let userIP = '127.0.0.1';
+
+// ==================== ROLES ====================
+const ROLES = {
+  admin: {
+    label: 'مدير النظام',
+    color: 'role-admin',
+    permissions: ['dashboard','students','payments','letters','messages','alerts','admin'],
+    canRegisterStudents: true,
+    canAddPayments: true,
+    canArchiveLetters: true,
+    canManageUsers: true,
+    canChangePasswords: true,
+    canManageColleges: true,
+    ipRestricted: false
+  },
+  dept_head: {
+    label: 'رئيس قسم',
+    color: 'role-dept',
+    permissions: ['dashboard','students','letters','messages','alerts'],
+    canRegisterStudents: true,
+    canAddPayments: false,
+    canArchiveLetters: true,
+    canManageUsers: false,
+    canChangePasswords: false,
+    canManageColleges: false,
+    ipRestricted: false,
+    deptOnly: true
+  },
+  registrar: {
+    label: 'مدير تسجيل شؤون الطلبة',
+    color: 'role-registrar',
+    permissions: ['dashboard','students','letters','messages','alerts'],
+    canRegisterStudents: true,
+    canAddPayments: false,
+    canArchiveLetters: true,
+    canManageUsers: false,
+    canChangePasswords: false,
+    canManageColleges: false,
+    ipRestricted: false
+  },
+  finance_manager: {
+    label: 'مدير المالية',
+    color: 'role-finance',
+    permissions: ['dashboard','payments','letters','messages','alerts'],
+    canRegisterStudents: false,
+    canAddPayments: true,
+    canArchiveLetters: true,
+    canManageUsers: false,
+    canChangePasswords: false,
+    canManageColleges: false,
+    ipRestricted: false
+  },
+  accounting: {
+    label: 'حاسبة',
+    color: 'role-accounting',
+    permissions: ['dashboard','payments','messages'],
+    canRegisterStudents: false,
+    canAddPayments: true,
+    canArchiveLetters: false,
+    canManageUsers: false,
+    canChangePasswords: false,
+    canManageColleges: false,
+    ipRestricted: true
+  },
+  college: {
+    label: 'كلية (مشاهدة فقط)',
+    color: 'role-college',
+    permissions: ['dashboard','collegeView','messages'],
+    canRegisterStudents: false,
+    canAddPayments: false,
+    canArchiveLetters: false,
+    canManageUsers: false,
+    canChangePasswords: false,
+    canManageColleges: false,
+    ipRestricted: false,
+    readOnly: true
+  }
+};
+
+// ==================== INIT ====================
+async function initDB() {
+  try {
+    SQL = await initSqlJs({
+      locateFile: file => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/' + file
+    });
+    db = new SQL.Database();
+    setupTables();
+    insertSeedData();
+    detectIP();
+    console.log('Database initialized');
+  } catch (e) {
+    console.error('DB init failed:', e);
+    document.getElementById('loginError').textContent = '❌ فشل تحميل قاعدة البيانات';
+  }
+}
+
+function detectIP() {
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => { userIP = d.ip; })
+    .catch(() => { userIP = '127.0.0.1'; })
+    .finally(() => {
+      const el = document.getElementById('currentIP');
+      if (el) el.textContent = 'IP: ' + userIP;
+    });
+}
+
+function setupTables() {
+  db.run("CREATE TABLE IF NOT EXISTS colleges (id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT,created_at TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS departments (id TEXT PRIMARY KEY,name TEXT NOT NULL,college_id TEXT NOT NULL,annual_fee INTEGER NOT NULL,duration INTEGER NOT NULL,FOREIGN KEY (college_id) REFERENCES colleges(id))");
+  db.run("CREATE TABLE IF NOT EXISTS students (id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT,phone TEXT,national_id TEXT,department_id TEXT,shift TEXT,stage INTEGER DEFAULT 1,status TEXT DEFAULT 'active',reg_date TEXT,total_fee INTEGER,FOREIGN KEY (department_id) REFERENCES departments(id))");
+  db.run("CREATE TABLE IF NOT EXISTS student_documents (id INTEGER PRIMARY KEY AUTOINCREMENT,student_id TEXT,doc_name TEXT,provided INTEGER DEFAULT 0,expiry_date TEXT,FOREIGN KEY (student_id) REFERENCES students(id))");
+  db.run("CREATE TABLE IF NOT EXISTS payments (id TEXT PRIMARY KEY,student_id TEXT,amount INTEGER,pay_date TEXT,receipt_no TEXT,category TEXT,method TEXT,FOREIGN KEY (student_id) REFERENCES students(id))");
+  db.run("CREATE TABLE IF NOT EXISTS official_letters (id TEXT PRIMARY KEY,letter_number TEXT NOT NULL,title TEXT NOT NULL,source TEXT,destination TEXT,date_issued TEXT,expiry_date TEXT,category TEXT,summary TEXT,status TEXT DEFAULT 'active')");
+  db.run("CREATE TABLE IF NOT EXISTS internal_messages (id INTEGER PRIMARY KEY AUTOINCREMENT,sender TEXT,receiver TEXT,subject TEXT,content TEXT,timestamp TEXT,priority TEXT DEFAULT 'normal',is_auto INTEGER DEFAULT 0)");
+  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT,full_name TEXT NOT NULL,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL,department_id TEXT,allowed_ip TEXT,is_active INTEGER DEFAULT 1,created_at TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,action TEXT,details TEXT,timestamp TEXT,ip_address TEXT)");
+}
+
+function insertSeedData() {
+  const colleges = [
+    ['dentistry_college','كلية طب الأسنان','تأسست عام 2010'],
+    ['pharmacy_college','كلية الصيدلة','تأسست عام 2012'],
+    ['engineering_college','كلية الهندسة التقنية','تأسست عام 2015'],
+    ['law_college','كلية القانون','تأسست عام 2011'],
+    ['admin_college','كلية العلوم الإدارية','تأسست عام 2013']
+  ];
+  let stmt = db.prepare("INSERT OR IGNORE INTO colleges VALUES (?,?,?,?)");
+  colleges.forEach(c => stmt.run([c[0], c[1], c[2], new Date().toISOString()]));
+  stmt.free();
+
+  const depts = [
+    ['dentistry','طب الأسنان','dentistry_college',8000000,5],
+    ['pharmacy','الصيدلة','pharmacy_college',7000000,5],
+    ['software-eng','هندسة البرمجيات','engineering_college',3500000,4],
+    ['law','القانون','law_college',2800000,4],
+    ['business','إدارة الأعمال','admin_college',1900000,4]
+  ];
+  stmt = db.prepare("INSERT OR IGNORE INTO departments VALUES (?,?,?,?,?)");
+  depts.forEach(d => stmt.run(d));
+  stmt.free();
+
+  const now = new Date().toISOString();
+  const users = [
+    ['مدير النظام','admin','admin123','admin',null,null],
+    ['د. علي حسن - رئيس قسم طب الأسنان','dept_dentistry','dent2026','dept_head','dentistry',null],
+    ['د. سارة أحمد - رئيسة قسم الصيدلة','dept_pharmacy','pharm2026','dept_head','pharmacy',null],
+    ['د. محمد كريم - رئيس قسم الهندسة','dept_software','soft2026','dept_head','software-eng',null],
+    ['أحمد محمود - مدير التسجيل','registrar','reg2026','registrar',null,null],
+    ['فاطمة علي - مديرة المالية','finance','fin2026','finance_manager',null,null],
+    ['حاسبة 1','accounting1','acc2026','accounting',null,'192.168.1.100'],
+    ['حاسبة 2','accounting2','acc2026b','accounting',null,'192.168.1.101'],
+    ['كلية طب الأسنان','college_dentistry','col2026','college','dentistry_college',null],
+    ['كلية الصيدلة','college_pharmacy','col2026b','college','pharmacy_college',null],
+    ['كلية الهندسة','college_engineering','col2026c','college','engineering_college',null]
+  ];
+  stmt = db.prepare("INSERT OR IGNORE INTO users (full_name,username,password,role,department_id,allowed_ip,created_at) VALUES (?,?,?,?,?,?,?)");
+  users.forEach(u => stmt.run([...u, now]));
+  stmt.free();
+
+  registerStudentDirect('STU-1001','أحمد كريم عبد الحسن','ahmed@ahliya.edu.iq','07701112223','199923849102','software-eng','صباحي',3500000,'2028-11-20','2026-09-12');
+  registerStudentDirect('STU-1002','مريم جعفر صادق الموسوي','maryam@ahliya.edu.iq','07802223334','200192837482','dentistry','صباحي',8000000,'2026-04-10','2026-09-12');
+
+  addPaymentDirect('PAY-501','STU-1001',1500000,'2026-01-15','REC-9081','tuition','نقدي');
+  addPaymentDirect('PAY-502','STU-1002',3000000,'2026-02-10','REC-9102','tuition','حوالة مصرفية');
+
+  archiveLetterDirect('LET-2026-01','وزاري / ت ق / 2394','المنحة المجانية والتسجيل للعام ٢٠٢٦','وزارة التعليم العالي','رئاسة الجامعة','2026-01-10','2026-12-31','وزاري','تسهيل قبول الطلبة بالمنحة');
+  archiveLetterDirect('LET-2026-02','أ م / صحة / 12','الفحوصات الطبية الملزمة للطلبة الجدد','وزارة الصحة','رئاسة الجامعة','2026-02-01','2026-05-01','وزاري','طلب الفحص الطبي الدوري - منتهية الصلاحية');
+
+  sendMessageDirect('رئاسة الجامعة','شؤون التسجيل والحسابات','تدقيق مستندات المقبولين الجدد ومتابعة منتهي الصلاحية','الرجاء تدقيق تواريخ صلاحية مستمسكات الكليات والتبليغ الفوري لمنتهية وثائقهم.','عالي');
+  sendMessageDirect('مركز شؤون التسجيل','رئاسة الجامعة','إشعار تمديد أرشفة الكتب الرسمية','تمت الأرشفة وإصدار التنبيهات اللازمة للمشرفين.','عادي');
+}
+
+function registerStudentDirect(id,name,email,phone,natId,dept,shift,fee,natExpiry,medExpiry) {
+  const regDate = new Date().toISOString().split('T')[0];
+  try {
+    db.run("INSERT OR IGNORE INTO students VALUES (?,?,?,?,?,?,?,1,'active',?,?)", [id,name,email,phone,natId,dept,shift,regDate,fee]);
+    if (natExpiry) db.run("INSERT INTO student_documents (student_id,doc_name,provided,expiry_date) VALUES (?,?,1,?)", [id,'البطاقة الوطنية الموحدة',natExpiry]);
+    if (medExpiry) db.run("INSERT INTO student_documents (student_id,doc_name,provided,expiry_date) VALUES (?,?,1,?)", [id,'الفحص الطبي السنوي',medExpiry]);
+  } catch(e) {}
+}
+
+function addPaymentDirect(id,stuId,amount,date,receipt,cat,method) {
+  try { db.run("INSERT OR IGNORE INTO payments VALUES (?,?,?,?,?,?,?)", [id,stuId,amount,date,receipt,cat,method]); } catch(e) {}
+}
+
+function archiveLetterDirect(id,num,title,source,dest,issued,expiry,cat,summary) {
+  try { db.run("INSERT OR IGNORE INTO official_letters VALUES (?,?,?,?,?,?,?,?,?,'active')", [id,num,title,source,dest,issued,expiry,cat,summary]); } catch(e) {}
+}
+
+function sendMessageDirect(sender,receiver,subject,content,priority,isAuto) {
+  if (isAuto === undefined) isAuto = 0;
+  const timestamp = new Date().toLocaleString('ar-IQ');
+  try { db.run("INSERT INTO internal_messages (sender,receiver,subject,content,timestamp,priority,is_auto) VALUES (?,?,?,?,?,?,?)", [sender,receiver,subject,content,timestamp,priority,isAuto]); } catch(e) {}
+}
+
+function addAuditLog(userId,action,details) {
+  const timestamp = new Date().toLocaleString('ar-IQ');
+  try { db.run("INSERT INTO audit_log (user_id,action,details,timestamp,ip_address) VALUES (?,?,?,?,?)", [userId,action,details,timestamp,userIP]); } catch(e) {}
+}
+
+// ==================== LOGIN ====================
+function doLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  if (!db) {
+    errorEl.textContent = '❌ قاعدة البيانات غير جاهزة، أعد تحميل الصفحة';
+    return;
+  }
+
+  const stmt = db.prepare("SELECT * FROM users WHERE username=? AND password=? AND is_active=1");
+  stmt.bind([username, password]);
+  let result = null;
+  while (stmt.step()) {
+    result = stmt.getAsObject();
+  }
+  stmt.free();
+
+  if (!result) {
+    errorEl.textContent = '❌ اسم المستخدم أو رمز الدخول غير صحيح';
+    return;
+  }
+
+  const roleConfig = ROLES[result.role];
+  if (!roleConfig) {
+    errorEl.textContent = '❌ دور المستخدم غير معرف في النظام';
+    return;
+  }
+
+  const isAdminLogin = (result.role === 'admin');
+
+  if (roleConfig.ipRestricted && !isAdminLogin) {
+    if (!result.allowed_ip) {
+      errorEl.textContent = '❌ لم يتم تعيين IP لهذا الحساب من قبل مدير النظام';
+      return;
+    }
+    if (userIP !== result.allowed_ip) {
+      const ipNotice = document.getElementById('ipNotice');
+      ipNotice.classList.remove('hidden');
+      ipNotice.innerHTML = "<div class='alert alert-danger'>🚫 <strong>رفض الدخول:</strong><br>IP المسموح: <strong>" + result.allowed_ip + "</strong><br>IP الحالي: <strong>" + userIP + "</strong><br><br>يرجى الاتصال بمدير النظام لتحديث IP الجهاز</div>";
+      errorEl.textContent = '❌ IP الجهاز غير مطابق - اتصل بمدير النظام';
+      return;
+    }
+    const ipNotice = document.getElementById('ipNotice');
+    ipNotice.classList.remove('hidden');
+    ipNotice.innerHTML = "<div class='alert alert-success'>✅ <strong>IP مقبول:</strong> " + userIP + "</div>";
+  }
+
+  if (isAdminLogin) {
+    const ipNotice = document.getElementById('ipNotice');
+    ipNotice.classList.remove('hidden');
+    ipNotice.innerHTML = "<div class='alert alert-success'>👑 <strong>دخول كمدير نظام</strong><br>تم تجاوز جميع القيود - IP الحالي: " + userIP + "</div>";
+  }
+
+  currentUser = {
+    id: result.id,
+    name: result.full_name,
+    username: result.username,
+    role: result.role,
+    roleLabel: roleConfig.label,
+    department_id: result.department_id,
+    permissions: roleConfig.permissions,
+    config: roleConfig,
+    isAdmin: isAdminLogin
+  };
+
+  addAuditLog(result.id, 'LOGIN', 'تسجيل دخول كـ ' + roleConfig.label + ' من IP: ' + userIP + (isAdminLogin ? ' (مدير نظام)' : ''));
+
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('currentUserName').textContent = result.full_name;
+  document.getElementById('currentUserRole').innerHTML = '<span class="role-badge ' + roleConfig.color + '">' + roleConfig.label + '</span>';
+  applyPermissions();
+  updateStats();
+  updateAlertBadge();
+}
+
+function logout() {
+  if (currentUser) addAuditLog(currentUser.id, 'LOGOUT', 'تسجيل خروج');
+  currentUser = null;
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginForm').reset();
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('ipNotice').classList.add('hidden');
+}
+
+// ==================== PERMISSIONS ====================
+function applyPermissions() {
+  if (!currentUser) return;
+  const cfg = currentUser.config;
+
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    const perm = tab.getAttribute('data-perm');
+    if (perm === 'admin') { tab.classList.toggle('hidden', !cfg.canManageUsers); }
+    else if (perm === 'college') { tab.classList.toggle('hidden', !currentUser.permissions.includes('collegeView')); }
+    else if (currentUser.permissions.includes(perm)) { tab.classList.remove('hidden'); }
+    else { tab.classList.add('hidden'); }
+  });
+
+  if (cfg.readOnly) {
+    loadCollegeView();
+    return;
+  }
+
+  if (!cfg.canRegisterStudents) {
+    const el = document.getElementById('studentRegisterCard');
+    if (el) el.innerHTML = '<div class="permission-denied"><h2>🚫</h2><p>ليس لديك صلاحية تسجيل طلاب جدد</p></div>';
+  }
+  if (!cfg.canAddPayments) {
+    const el = document.getElementById('paymentRegisterCard');
+    if (el) el.innerHTML = '<div class="permission-denied"><h2>🚫</h2><p>ليس لديك صلاحية تسجيل مدفوعات</p></div>';
+  }
+  if (!cfg.canArchiveLetters) {
+    const el = document.getElementById('letterArchiveCard');
+    if (el) el.innerHTML = '<div class="permission-denied"><h2>🚫</h2><p>ليس لديك صلاحية أرشفة كتب</p></div>';
+  }
+
+  if (cfg.canManageColleges) {
+    document.getElementById('collegeForm').style.display = 'block';
+    loadCollegesList();
+  } else {
+    document.getElementById('collegeForm').style.display = 'none';
+  }
+
+  if (cfg.canManageUsers) {
+    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-success">✅ لديك صلاحيات كاملة لإدارة المستخدمين</div>';
+    document.getElementById('userForm').style.display = 'block';
+    loadUsersList();
+    loadAuditLog();
+  } else {
+    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-danger">🚫 ليس لديك صلاحية إدارة المستخدمين</div>';
+    document.getElementById('userForm').style.display = 'none';
+  }
+
+  updateDeptSelects();
+}
+
+function updateDeptSelects() {
+  const result = db.exec("SELECT id,name FROM departments ORDER BY name");
+  const selects = ['stuDept','newUserDept'];
+  selects.forEach(selId => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">اختر</option>';
+    if (result && result.length > 0) {
+      result[0].values.forEach(d => { sel.innerHTML += '<option value="' + d[0] + '">' + d[1] + '</option>'; });
+    }
+  });
+}
+
+function showSection(sectionId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const target = document.getElementById(sectionId);
+  if (target) target.classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ==================== STUDENTS ====================
+function registerStudent(e) {
+  e.preventDefault();
+  if (!currentUser || !currentUser.config.canRegisterStudents) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const id = document.getElementById('stuId').value;
+  const name = document.getElementById('stuName').value;
+  const email = document.getElementById('stuEmail').value;
+  const phone = document.getElementById('stuPhone').value;
+  const natId = document.getElementById('stuNatId').value;
+  const dept = document.getElementById('stuDept').value;
+  const shift = document.getElementById('stuShift').value;
+  const fee = parseInt(document.getElementById('stuFee').value);
+  const natExpiry = document.getElementById('docNatExpiry').value;
+  const medExpiry = document.getElementById('docMedExpiry').value;
+  registerStudentDirect(id,name,email,phone,natId,dept,shift,fee,natExpiry,medExpiry);
+  addAuditLog(currentUser.id,'REGISTER_STUDENT','تسجيل: ' + id);
+  showAlert('success','✔ تم تسجيل ' + name);
+  document.getElementById('studentForm').reset();
+  updateStats();
+}
+
+function searchStudent() {
+  const query = document.getElementById('searchStudent').value;
+  if (!query) return;
+  const result = db.exec("SELECT * FROM students WHERE id LIKE '%" + query + "%' OR name LIKE '%" + query + "%'");
+  const container = document.getElementById('studentResults');
+  if (!result || result.length === 0 || result[0].values.length === 0) {
+    container.innerHTML = '<div class="alert alert-info">لا يوجد طلاب مطابقين</div>';
+    return;
+  }
+  let html = '<div class="table-container"><table><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>الهاتف</th><th>الحالة</th></tr>';
+  result[0].values.forEach(s => {
+    html += '<tr><td>' + s[0] + '</td><td>' + s[1] + '</td><td>' + s[5] + '</td><td>' + s[3] + '</td><td class="status-' + (s[8] === 'active' ? 'active' : 'expired') + '">' + s[8] + '</td></tr>';
+  });
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+function loadAllStudents() {
+  const result = db.exec("SELECT * FROM students ORDER BY reg_date DESC");
+  const container = document.getElementById('studentResults');
+  if (!result || result.length === 0 || result[0].values.length === 0) {
+    container.innerHTML = '<div class="alert alert-info">لا يوجد طلاب</div>';
+    return;
+  }
+  let html = '<div class="table-container"><table><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>الهاتف</th><th>الدراسة</th><th>تاريخ القبول</th><th>الحالة</th></tr>';
+  result[0].values.forEach(s => {
+    html += '<tr><td>' + s[0] + '</td><td>' + s[1] + '</td><td>' + s[5] + '</td><td>' + s[3] + '</td><td>' + s[6] + '</td><td>' + s[9] + '</td><td class="status-' + (s[8] === 'active' ? 'active' : 'expired') + '">' + s[8] + '</td></tr>';
+  });
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+// ==================== PAYMENTS ====================
+function addPayment(e) {
+  e.preventDefault();
+  if (!currentUser || !currentUser.config.canAddPayments) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const payId = 'PAY-' + Date.now().toString().slice(-6);
+  const stuId = document.getElementById('payStuId').value;
+  const amount = parseInt(document.getElementById('payAmount').value);
+  const receipt = document.getElementById('payReceipt').value;
+  const cat = document.getElementById('payCat').value;
+  const method = document.getElementById('payMethod').value;
+  const payDate = new Date().toISOString().split('T')[0];
+  try {
+    db.run("INSERT INTO payments VALUES (?,?,?,?,?,?,?)", [payId,stuId,amount,payDate,receipt,cat,method]);
+    addAuditLog(currentUser.id,'ADD_PAYMENT','دفع: ' + payId + ' - ' + amount + ' د.ع');
+    showAlert('success','✔ تم تسجيل الوصل ' + receipt);
+    document.getElementById('paymentForm').reset();
+    updateStats();
+  } catch(e) { showAlert('danger','❌ خطأ'); }
+}
+
+function getStudentLedger(stuId) {
+  const student = db.exec("SELECT total_fee FROM students WHERE id='" + stuId + "'");
+  const totalFee = student && student.length > 0 && student[0].values.length > 0 ? student[0].values[0][0] : 0;
+  const paidResult = db.exec("SELECT SUM(amount) FROM payments WHERE student_id='" + stuId + "'");
+  const paid = paidResult && paidResult.length > 0 && paidResult[0].values.length > 0 ? paidResult[0].values[0][0] || 0 : 0;
+  const historyResult = db.exec("SELECT id,amount,pay_date,receipt_no,category,method FROM payments WHERE student_id='" + stuId + "' ORDER BY pay_date DESC");
+  const payments = [];
+  if (historyResult && historyResult.length > 0) {
+    historyResult[0].values.forEach(p => { payments.push({id:p[0],amount:p[1],date:p[2],receipt:p[3],cat:p[4],method:p[5]}); });
+  }
+  return {total:totalFee,paid:paid,remaining:Math.max(0,totalFee-paid),payments:payments};
+}
+
+function showLedger() {
+  const stuId = document.getElementById('ledgerStuId').value;
+  if (!stuId) return;
+  const ledger = getStudentLedger(stuId);
+  const student = db.exec("SELECT name FROM students WHERE id='" + stuId + "'");
+  const stuName = student && student.length > 0 ? student[0].values[0][0] : stuId;
+  let html = '<h3>📋 كشف حساب: ' + stuName + '</h3><div class="ledger-summary"><div class="ledger-box"><h4>القسط المطلوب</h4><div class="amount">' + ledger.total.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المسدد</h4><div class="amount">' + ledger.paid.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المتبقي</h4><div class="amount" style="color:' + (ledger.remaining > 0 ? '#dc3545' : '#28a745') + '">' + ledger.remaining.toLocaleString() + ' د.ع</div></div></div>';
+  if (ledger.payments.length > 0) {
+    html += '<div class="table-container"><table><tr><th>الوصل</th><th>المبلغ</th><th>التاريخ</th><th>الفئة</th><th>الطريقة</th></tr>';
+    ledger.payments.forEach(p => { html += '<tr><td>' + p.receipt + '</td><td>' + p.amount.toLocaleString() + '</td><td>' + p.date + '</td><td>' + p.cat + '</td><td>' + p.method + '</td></tr>'; });
+    html += '</table></div>';
+  } else { html += '<p>لا توجد مدفوعات</p>'; }
+  document.getElementById('ledgerResult').innerHTML = html;
+}
+
+// ==================== LETTERS ====================
+function archiveLetter(e) {
+  e.preventDefault();
+  if (!currentUser || !currentUser.config.canArchiveLetters) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const letId = 'LET-' + Date.now().toString().slice(-6);
+  const num = document.getElementById('letNum').value;
+  const title = document.getElementById('letTitle').value;
+  const source = document.getElementById('letSource').value;
+  const dest = document.getElementById('letDest').value;
+  const issued = document.getElementById('letIssued').value;
+  const expiry = document.getElementById('letExpiry').value;
+  const cat = document.getElementById('letCat').value;
+  const summary = document.getElementById('letSummary').value;
+  archiveLetterDirect(letId,num,title,source,dest,issued,expiry,cat,summary);
+  addAuditLog(currentUser.id,'ARCHIVE_LETTER','أرشفة: ' + letId);
+  showAlert('success','✔ تم الأرشفة بنجاح');
+  document.getElementById('letterForm').reset();
+  loadAllLetters();
+  updateStats();
+}
+
+function loadAllLetters() {
+  const result = db.exec("SELECT * FROM official_letters ORDER BY date_issued DESC");
+  const container = document.getElementById('lettersTable');
+  if (!result || result.length === 0 || result[0].values.length === 0) {
+    container.innerHTML = '<div class="alert alert-info">لا توجد كتب</div>';
+    return;
+  }
+  let html = '<table><tr><th>الكود</th><th>الرقم</th><th>الموضوع</th><th>الجهة</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th></tr>';
+  result[0].values.forEach(row => {
+    const isExpired = row[6] && new Date(row[6]) < new Date();
+    html += '<tr><td>' + row[0] + '</td><td>' + row[1] + '</td><td>' + row[2] + '</td><td>' + row[3] + ' ➔ ' + row[4] + '</td><td>' + row[5] + '</td><td class="' + (isExpired ? 'status-expired' : 'status-active') + '">' + row[6] + '</td><td class="' + (isExpired ? 'status-expired' : 'status-active') + '">' + (isExpired ? 'منتهي' : 'فعال') + '</td></tr>';
+  });
+  html += '</table>';
+  container.innerHTML = html;
+}
+
+// ==================== MESSAGES ====================
+function sendMessage(e) {
+  e.preventDefault();
+  const sender = document.getElementById('msgSender').value;
+  const receiver = document.getElementById('msgReceiver').value;
+  const subject = document.getElementById('msgSubject').value;
+  const content = document.getElementById('msgContent').value;
+  const priority = document.getElementById('msgPriority').value;
+  sendMessageDirect(sender,receiver,subject,content,priority);
+  if (currentUser) addAuditLog(currentUser.id,'SEND_MESSAGE','رسالة إلى: ' + receiver);
+  showAlert('success','✔ تم الإرسال');
+  document.getElementById('messageForm').reset();
+  updateStats();
+}
+
+function loadMessages() {
+  const role = document.getElementById('msgRole').value;
+  if (!role) { document.getElementById('messagesList').innerHTML = '<div class="alert alert-warning">أدخل المسمى الوظيفي</div>'; return; }
+  const result = db.exec("SELECT id,sender,receiver,subject,content,timestamp,priority FROM internal_messages WHERE receiver LIKE '%" + role + "%' OR receiver='جميع الكليات والاقسام' OR receiver='شؤون التسجيل والحسابات' ORDER BY timestamp DESC");
+  const container = document.getElementById('messagesList');
+  if (!result || result.length === 0 || result[0].values.length === 0) {
+    container.innerHTML = '<div class="alert alert-info">لا توجد رسائل</div>';
+    return;
+  }
+  let html = '';
+  result[0].values.forEach(m => {
+    const isHigh = m[6] === 'عالي';
+    html += '<div class="message-card ' + (isHigh ? 'high-priority' : '') + '"><div class="message-header"><span>من: ' + m[1] + ' | إلى: ' + m[2] + '</span><span>' + m[5] + ' | الأولوية: ' + m[6] + '</span></div><h4>' + m[3] + '</h4><p>' + m[4] + '</p></div>';
+  });
+  container.innerHTML = html;
+}
+
+// ==================== ALERTS ====================
+function runFullCheck() {
+  const today = new Date().toISOString().split('T')[0];
+  let html = '<div class="alert alert-info">📅 تاريخ النظام: ' + today + '</div>';
+
+  const expiredDocs = db.exec("SELECT s.id,s.name,sd.doc_name,sd.expiry_date FROM student_documents sd JOIN students s ON sd.student_id=s.id WHERE sd.provided=1 AND sd.expiry_date IS NOT NULL AND sd.expiry_date<'" + today + "'");
+  html += '<h4>⚠️ وثائق منتهية الصلاحية</h4>';
+  if (expiredDocs && expiredDocs.length > 0 && expiredDocs[0].values.length > 0) {
+    html += '<div class="table-container"><table><tr><th>الطالب</th><th>الوثيقة</th><th>الانتهاء</th></tr>';
+    expiredDocs[0].values.forEach(d => { html += '<tr><td>' + d[1] + ' (' + d[0] + ')</td><td class="status-expired">' + d[2] + '</td><td>' + d[3] + '</td></tr>'; });
+    html += '</table></div>';
+  } else { html += '<div class="alert alert-success">✔ لا توجد وثائق منتهية</div>'; }
+
+  const expiredLetters = db.exec("SELECT id,letter_number,title,expiry_date FROM official_letters WHERE expiry_date IS NOT NULL AND expiry_date<'" + today + "'");
+  html += '<h4>⚠️ كتب رسمية منتهية</h4>';
+  if (expiredLetters && expiredLetters.length > 0 && expiredLetters[0].values.length > 0) {
+    html += '<div class="table-container"><table><tr><th>الكود</th><th>الرقم</th><th>الموضوع</th><th>الانتهاء</th></tr>';
+    expiredLetters[0].values.forEach(l => { html += '<tr><td>' + l[0] + '</td><td>' + l[1] + '</td><td>' + l[2] + '</td><td class="status-expired">' + l[3] + '</td></tr>'; });
+    html += '</table></div>';
+  } else { html += '<div class="alert alert-success">✔ جميع الكتب فعالة</div>'; }
+
+  document.getElementById('alertsResult').innerHTML = html;
+  updateAlertBadge();
+}
+
+// ==================== COLLEGE VIEW ====================
+function loadCollegeView() {
+  if (!currentUser || currentUser.role !== 'college' || !currentUser.department_id) return;
+  const collegeId = currentUser.department_id;
+
+  const stuResult = db.exec("SELECT s.id,s.name,s.email,s.phone,s.shift,s.reg_date,s.status,d.name as dept_name FROM students s JOIN departments d ON s.department_id=d.id WHERE d.college_id='" + collegeId + "' ORDER BY s.reg_date DESC");
+  const stuContainer = document.getElementById('collegeStudentsList');
+  if (stuResult && stuResult.length > 0 && stuResult[0].values.length > 0) {
+    let html = '<div class="table-container"><table><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>الهاتف</th><th>الدراسة</th><th>تاريخ القبول</th><th>الحالة</th></tr>';
+    stuResult[0].values.forEach(s => {
+      html += '<tr><td>' + s[0] + '</td><td>' + s[1] + '</td><td>' + s[6] + '</td><td>' + s[3] + '</td><td>' + s[4] + '</td><td>' + s[5] + '</td><td class="status-' + (s[6] === 'active' ? 'active' : 'expired') + '">' + s[6] + '</td></tr>';
+    });
+    html += '</table></div>';
+    stuContainer.innerHTML = html;
+  } else {
+    stuContainer.innerHTML = '<div class="alert alert-info">لا يوجد طلاب مقبولون حالياً</div>';
+  }
+
+  const msgResult = db.exec("SELECT sender,subject,content,timestamp,priority,is_auto FROM internal_messages WHERE receiver LIKE '%" + currentUser.name + "%' OR receiver='جميع الكليات' OR receiver='الكليات' ORDER BY timestamp DESC");
+  const msgContainer = document.getElementById('collegeMessages');
+  if (msgResult && msgResult.length > 0 && msgResult[0].values.length > 0) {
+    let html = '';
+    msgResult[0].values.forEach(m => {
+      const isAuto = m[5] === 1;
+      html += '<div class="message-card ' + (isAuto ? 'auto-msg' : '') + '"><div class="message-header"><span>من: ' + m[0] + '</span><span>' + m[3] + ' | الأولوية: ' + m[4] + (isAuto ? ' | 🤖 تلقائية' : '') + '</span></div><h4>' + m[1] + '</h4><p>' + m[2] + '</p></div>';
+    });
+    msgContainer.innerHTML = html;
+  } else {
+    msgContainer.innerHTML = '<div class="alert alert-info">لا توجد رسائل واردة</div>';
+  }
+
+  const stats = db.exec("SELECT COUNT(*),SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) FROM students s JOIN departments d ON s.department_id=d.id WHERE d.college_id='" + collegeId + "'");
+  const statsContainer = document.getElementById('collegeStats');
+  if (stats && stats.length > 0) {
+    const s = stats[0].values[0];
+    statsContainer.innerHTML = '<div class="stats-grid"><div class="stat-card"><h4>' + s[0] + '</h4><p>إجمالي الطلاب</p></div><div class="stat-card"><h4>' + s[1] + '</h4><p>الطلاب النشطين</p></div></div>';
+  }
+}
+
+// ==================== ADMIN ====================
+function addCollege(e) {
+  e.preventDefault();
+  if (!currentUser || !currentUser.config.canManageColleges) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const id = document.getElementById('newCollegeId').value;
+  const name = document.getElementById('newCollegeName').value;
+  const desc = document.getElementById('newCollegeDesc').value;
+  const now = new Date().toISOString();
+  try {
+    db.run("INSERT INTO colleges VALUES (?,?,?,?)", [id,name,desc,now]);
+    addAuditLog(currentUser.id,'ADD_COLLEGE','إضافة كلية: ' + name + ' (' + id + ')');
+    showAlert('success','✔ تم إضافة ' + name);
+    document.getElementById('collegeForm').reset();
+    loadCollegesList();
+  } catch(e) { showAlert('danger','❌ رمز الكلية مكرر'); }
+}
+
+function loadCollegesList() {
+  if (!currentUser || !currentUser.config.canManageColleges) return;
+  const result = db.exec("SELECT * FROM colleges ORDER BY name");
+  const container = document.getElementById('collegesList');
+  if (!result || result.length === 0) { container.innerHTML = '<p>لا توجد كليات</p>'; return; }
+  let html = '<div class="table-container"><table><tr><th>الرمز</th><th>الاسم</th><th>الوصف</th><th>تاريخ الإنشاء</th></tr>';
+  result[0].values.forEach(c => { html += '<tr><td>' + c[0] + '</td><td>' + c[1] + '</td><td>' + (c[2] || '-') + '</td><td>' + c[3] + '</td></tr>'; });
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+function addUser(e) {
+  e.preventDefault();
+  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const name = document.getElementById('newUserName').value;
+  const username = document.getElementById('newUserUsername').value;
+  const password = document.getElementById('newUserPassword').value;
+  const role = document.getElementById('newUserRole').value;
+  const dept = document.getElementById('newUserDept').value;
+  const ip = document.getElementById('newUserIP').value;
+  const now = new Date().toISOString();
+  try {
+    db.run("INSERT INTO users (full_name,username,password,role,department_id,allowed_ip,created_at) VALUES (?,?,?,?,?,?,?)", [name,username,password,role,dept || null,ip || null,now]);
+    addAuditLog(currentUser.id,'ADD_USER','إضافة: ' + username + ' - ' + name);
+    showAlert('success','✔ تم إضافة ' + name);
+    document.getElementById('userForm').reset();
+    loadUsersList();
+  } catch(e) { showAlert('danger','❌ اسم المستخدم مكرر'); }
+}
+
+function onRoleChange() {
+  const role = document.getElementById('newUserRole').value;
+  const ipField = document.getElementById('newUserIP');
+  if (role === 'accounting') { ipField.parentElement.style.display = 'block'; }
+  else { ipField.parentElement.style.display = 'none'; ipField.value = ''; }
+}
+
+function loadUsersList() {
+  if (!currentUser || !currentUser.config.canManageUsers) return;
+  const result = db.exec("SELECT id,full_name,username,role,department_id,allowed_ip,is_active FROM users ORDER BY id");
+  const container = document.getElementById('usersList');
+  if (!result || result.length === 0) { container.innerHTML = '<p>لا يوجد مستخدمين</p>'; return; }
+  let html = '<div class="table-container"><table><tr><th>الاسم</th><th>المستخدم</th><th>الدور</th><th>القسم/الكلية</th><th>IP</th><th>الحالة</th><th>إجراء</th></tr>';
+  result[0].values.forEach(u => {
+    const roleLabel = ROLES[u[3]] ? ROLES[u[3]].label : u[3];
+    const isActive = u[6] === 1;
+    html += '<tr><td>' + u[1] + '</td><td>' + u[2] + '</td><td><span class="role-badge ' + (ROLES[u[3]] ? ROLES[u[3]].color : '') + '">' + roleLabel + '</span></td><td>' + (u[4] || '-') + '</td><td>' + (u[5] || '-') + '</td><td class="' + (isActive ? 'status-active' : 'status-expired') + '">' + (isActive ? 'نشط' : 'معطل') + '</td><td><button class="btn btn-warning" onclick="changePassword(' + u[0] + ','' + u[1] + '')" style="padding:5px 10px;font-size:0.8em;">🔐 رمز</button> <button class="btn btn-info" onclick="changeUserIP(' + u[0] + ','' + u[1] + '','' + (u[5] || '') + '')" style="padding:5px 10px;font-size:0.8em;">🌐 IP</button> <button class="btn btn-danger" onclick="toggleUser(' + u[0] + ',' + u[6] + ')" style="padding:5px 10px;font-size:0.8em;">' + (isActive ? 'تعطيل' : 'تفعيل') + '</button></td></tr>';
+  });
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+function changePassword(userId,userName) {
+  if (!currentUser || !currentUser.config.canChangePasswords) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const newPass = prompt('أدخل رمز الدخول الجديد للمستخدم: ' + userName);
+  if (!newPass) return;
+  db.run("UPDATE users SET password=? WHERE id=?", [newPass,userId]);
+  addAuditLog(currentUser.id,'CHANGE_PASSWORD','تغيير رمز: ' + userName);
+  showAlert('success','✔ تم تغيير رمز ' + userName);
+  loadUsersList();
+}
+
+function toggleUser(userId,currentStatus) {
+  if (!currentUser || !currentUser.config.canManageUsers) return;
+  const newStatus = currentStatus === 1 ? 0 : 1;
+  db.run("UPDATE users SET is_active=? WHERE id=?", [newStatus,userId]);
+  addAuditLog(currentUser.id,'TOGGLE_USER',(newStatus === 1 ? 'تفعيل' : 'تعطيل') + ' ID:' + userId);
+  loadUsersList();
+}
+
+function changeUserIP(userId,userName,currentIP) {
+  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  const newIP = prompt('تغيير IP المستخدم: ' + userName + '
+
+IP الحالي: ' + (currentIP || 'غير محدد') + '
+
+أدخل IP الجديد (اتركه فارغاً لإزالة القيد):', currentIP || '');
+  if (newIP === null) return;
+  db.run("UPDATE users SET allowed_ip=? WHERE id=?", [newIP || null,userId]);
+  addAuditLog(currentUser.id,'CHANGE_IP','تغيير IP ' + userName + ' إلى: ' + (newIP || 'بدون'));
+  showAlert('success','✔ تم تحديث IP ' + userName);
+  loadUsersList();
+}
+
+function loadAuditLog() {
+  if (!currentUser || !currentUser.config.canManageUsers) return;
+  const result = db.exec("SELECT al.*,u.full_name FROM audit_log al LEFT JOIN users u ON al.user_id=u.id ORDER BY al.id DESC LIMIT 50");
+  const container = document.getElementById('auditLog');
+  if (!result || result.length === 0 || result[0].values.length === 0) { container.innerHTML = '<p>لا توجد عمليات</p>'; return; }
+  let html = '<div class="table-container"><table><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل</th><th>IP</th></tr>';
+  result[0].values.forEach(row => { html += '<tr><td>' + row[4] + '</td><td>' + (row[5] || 'نظام') + '</td><td>' + row[2] + '</td><td>' + row[3] + '</td><td>' + (row[6] || '-') + '</td></tr>'; });
+  html += '</table></div>';
+  container.innerHTML = html;
+}
+
+// ==================== STATS ====================
+function updateStats() {
+  const students = db.exec("SELECT COUNT(*) FROM students");
+  document.getElementById('statStudents').textContent = students && students.length > 0 ? students[0].values[0][0] : 0;
+  const payments = db.exec("SELECT SUM(amount) FROM payments");
+  document.getElementById('statPayments').textContent = payments && payments.length > 0 ? (payments[0].values[0][0] || 0).toLocaleString() : 0;
+  const letters = db.exec("SELECT COUNT(*) FROM official_letters");
+  document.getElementById('statLetters').textContent = letters && letters.length > 0 ? letters[0].values[0][0] : 0;
+  const messages = db.exec("SELECT COUNT(*) FROM internal_messages");
+  document.getElementById('statMessages').textContent = messages && messages.length > 0 ? messages[0].values[0][0] : 0;
+  updateDashboardAlerts();
+}
+
+function updateDashboardAlerts() {
+  const today = new Date().toISOString().split('T')[0];
+  let html = '';
+  const expiredDocs = db.exec("SELECT COUNT(*) FROM student_documents WHERE provided=1 AND expiry_date<'" + today + "'");
+  const docCount = expiredDocs && expiredDocs.length > 0 ? expiredDocs[0].values[0][0] : 0;
+  if (docCount > 0) html += '<div class="alert alert-danger">⚠️ ' + docCount + ' وثيقة منتهية الصلاحية</div>';
+  const expiredLets = db.exec("SELECT COUNT(*) FROM official_letters WHERE expiry_date<'" + today + "'");
+  const letCount = expiredLets && expiredLets.length > 0 ? expiredLets[0].values[0][0] : 0;
+  if (letCount > 0) html += '<div class="alert alert-warning">⚠️ ' + letCount + ' كتاب رسمي منتهي</div>';
+  if (html === '') html = '<div class="alert alert-success">✔ النظام يعمل بكفاءة - لا توجد إنذارات</div>';
+  document.getElementById('dashboardAlerts').innerHTML = html;
+}
+
+function updateAlertBadge() {
+  const today = new Date().toISOString().split('T')[0];
+  const expiredDocs = db.exec("SELECT COUNT(*) FROM student_documents WHERE provided=1 AND expiry_date<'" + today + "'");
+  const expiredLets = db.exec("SELECT COUNT(*) FROM official_letters WHERE expiry_date<'" + today + "'");
+  const total = (expiredDocs && expiredDocs.length > 0 ? expiredDocs[0].values[0][0] : 0) + (expiredLets && expiredLets.length > 0 ? expiredLets[0].values[0][0] : 0);
+  document.getElementById('alertBadge').textContent = total;
+}
+
+// ==================== UTILS ====================
+function showModal(content) { document.getElementById('modalBody').innerHTML = content; document.getElementById('modal').classList.add('active'); }
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+function showAlert(type,message) {
+  const div = document.createElement('div'); div.className = 'alert alert-' + type; div.textContent = message;
+  document.querySelector('.content').insertBefore(div, document.querySelector('.content').firstChild);
+  setTimeout(() => div.remove(), 5000);
+}
+
+window.onload = function() { initDB().catch(e => console.error(e)); };
+</script>
+</body>
+</html>
