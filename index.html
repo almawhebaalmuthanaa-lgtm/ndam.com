@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>جامعة الأهلية - النظام المتكامل</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d);min-height:100vh;padding:20px}
@@ -66,7 +69,6 @@ tr:hover{background:#f8f9fa}
 .login-screen{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d)}
 .login-box{background:white;padding:40px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:450px;text-align:center}
 .login-box h2{color:#1a2a6c;margin-bottom:10px}
-.login-box .logo{font-size:4em;margin-bottom:10px}
 .role-badge{display:inline-block;padding:5px 15px;border-radius:20px;font-size:0.85em;font-weight:bold;margin:5px}
 .role-admin{background:#dc3545;color:white}
 .role-dept{background:#fd7e14;color:white}
@@ -92,7 +94,6 @@ tr:hover{background:#f8f9fa}
 <!-- Login Screen -->
 <div id="loginScreen" class="login-screen">
 <div class="login-box">
-<div class="logo">🏛️</div>
 <h2>جامعة الأهلية</h2>
 <p style="color:#666;margin-bottom:25px;">النظام المتكامل - تسجيل الدخول</p>
 <div id="ipNotice" class="ip-info hidden"></div>
@@ -105,25 +106,8 @@ tr:hover{background:#f8f9fa}
 <label>رمز الدخول</label>
 <input type="password" id="loginPassword" placeholder="أدخل رمز الدخول" required>
 </div>
-<button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">🔐 دخول</button>
+<button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">دخول</button>
 </form>
-<div style="margin-top:25px;padding-top:20px;border-top:1px solid #eee;">
-<p style="font-size:0.85em;color:#888;margin-bottom:10px;">الأدوار المتاحة:</p>
-<span class="role-badge role-admin">مدير النظام</span>
-<span class="role-badge role-dept">رئيس قسم</span>
-<span class="role-badge role-registrar">مدير تسجيل</span>
-<span class="role-badge role-finance">مدير المالية</span>
-<span class="role-badge role-accounting">حاسبة</span>
-<span class="role-badge role-college">كلية</span>
-</div>
-<div style="margin-top:15px;padding:10px;background:#f8f9fa;border-radius:8px;font-size:0.8em;color:#666;text-align:right;">
-<p style="margin-bottom:5px;font-weight:bold;">🔑 بيانات الدخول الافتراضية:</p>
-<p>admin / admin123 (مدير النظام)</p>
-<p>registrar / reg2026 (مدير تسجيل)</p>
-<p>finance / fin2026 (مدير مالية)</p>
-<p>college_dentistry / col2026 (كلية طب الأسنان - مشاهدة فقط)</p>
-<p>college_eng / col2026e (كلية الهندسة - مشاهدة فقط)</p>
-</div>
 <div id="loginError" style="margin-top:15px;color:#dc3545;font-weight:bold;"></div>
 </div>
 </div>
@@ -132,14 +116,13 @@ tr:hover{background:#f8f9fa}
 <div id="mainApp" class="hidden">
 <div class="container">
 <div class="header">
-<h1>🏛️ جامعة الأهلية</h1>
+<h1>جامعة الأهلية</h1>
 <p>النظام المتكامل لتسجيل الطلبة والإدارة المالية والأرشفة والتواصل</p>
 <p style="margin-top:10px;font-size:0.9em;opacity:0.8">Al-Ahliya University Integrated Management System</p>
 </div>
 
 <div class="user-bar">
 <div class="user-info">
-<span style="font-size:1.5em;">👤</span>
 <div>
 <div id="currentUserName" style="font-weight:bold;"></div>
 <div id="currentUserRole" style="font-size:0.85em;color:#666;"></div>
@@ -147,19 +130,19 @@ tr:hover{background:#f8f9fa}
 </div>
 <div>
 <span id="currentIP" style="font-size:0.8em;color:#888;margin-left:10px;"></span>
-<button class="btn btn-secondary" onclick="logout()" style="padding:8px 20px;font-size:0.9em;">🚪 خروج</button>
+<button class="btn btn-secondary" onclick="logout()" style="padding:8px 20px;font-size:0.9em;">خروج</button>
 </div>
 </div>
 
 <div class="nav-tabs" id="navTabs">
-<button class="nav-tab active" onclick="showSection('dashboard')" data-perm="dashboard">📊 لوحة التحكم</button>
-<button class="nav-tab" onclick="showSection('students')" data-perm="students">👨‍🎓 الطلاب</button>
-<button class="nav-tab" onclick="showSection('payments')" data-perm="payments">💰 المالية</button>
-<button class="nav-tab" onclick="showSection('letters')" data-perm="letters">📜 الأرشيف</button>
-<button class="nav-tab" onclick="showSection('messages')" data-perm="messages">✉️ التواصل</button>
-<button class="nav-tab" onclick="showSection('alerts')" data-perm="alerts">⚠️ الإنذارات <span class="badge" id="alertBadge">0</span></button>
-<button class="nav-tab hidden" id="adminTab" onclick="showSection('admin')" data-perm="admin">⚙️ إدارة النظام</button>
-<button class="nav-tab hidden" id="collegeTab" onclick="showSection('collegeView')" data-perm="college">🏛️ الكلية</button>
+<button class="nav-tab active" onclick="showSection('dashboard')" data-perm="dashboard">لوحة التحكم</button>
+<button class="nav-tab" onclick="showSection('students')" data-perm="students">الطلاب</button>
+<button class="nav-tab" onclick="showSection('payments')" data-perm="payments">المالية</button>
+<button class="nav-tab" onclick="showSection('letters')" data-perm="letters">الأرشيف</button>
+<button class="nav-tab" onclick="showSection('messages')" data-perm="messages">التواصل</button>
+<button class="nav-tab" onclick="showSection('alerts')" data-perm="alerts">الإنذارات <span class="badge" id="alertBadge">0</span></button>
+<button class="nav-tab hidden" id="adminTab" onclick="showSection('admin')" data-perm="admin">إدارة النظام</button>
+<button class="nav-tab hidden" id="collegeTab" onclick="showSection('collegeView')" data-perm="college">الكلية</button>
 </div>
 
 <div class="content">
@@ -172,13 +155,13 @@ tr:hover{background:#f8f9fa}
 <div class="stat-card"><h4 id="statLetters">0</h4><p>الكتب المؤرشفة</p></div>
 <div class="stat-card"><h4 id="statMessages">0</h4><p>الرسائل الداخلية</p></div>
 </div>
-<div class="card"><h3>📈 ملخص سريع</h3><div id="dashboardAlerts"></div></div>
+<div class="card"><h3>ملخص سريع</h3><div id="dashboardAlerts"></div></div>
 </div>
 
 <!-- Students -->
 <div id="students" class="section">
 <div class="card" id="studentRegisterCard">
-<h3>📝 تسجيل طالب جديد</h3>
+<h3>تسجيل طالب جديد</h3>
 <form id="studentForm" onsubmit="registerStudent(event)">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
 <div class="form-group"><label>رقم التسجيل</label><input type="text" id="stuId" placeholder="STU-XXXX" required></div>
@@ -191,17 +174,29 @@ tr:hover{background:#f8f9fa}
 <div class="form-group"><label>القسط الإجمالي (د.ع)</label><input type="number" id="stuFee" required></div>
 </div>
 <div style="margin-top:15px;">
-<label style="font-weight:bold;margin-bottom:10px;display:block;">📄 المستمسكات:</label>
+<label style="font-weight:bold;margin-bottom:10px;display:block;">المستمسكات:</label>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
 <div class="form-group"><label>تاريخ انتهاء الوطنية</label><input type="date" id="docNatExpiry"></div>
 <div class="form-group"><label>تاريخ انتهاء الفحص الطبي</label><input type="date" id="docMedExpiry"></div>
 </div>
 </div>
-<button type="submit" class="btn btn-primary" style="margin-top:15px;">✔ تسجيل الطالب</button>
+<button type="submit" class="btn btn-primary" style="margin-top:15px;">تسجيل الطالب</button>
 </form>
 </div>
+<div class="card" id="excelManagementCard">
+<h3>إدارة وتصدير بيانات الطلاب من Excel (استيراد وتصدير ذكي)</h3>
+<div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+<button class="btn btn-success" onclick="exportStudentsToExcel()">📥 تصدير الطلاب إلى Excel</button>
+<div style="display:flex; gap:10px; align-items:center; flex:1; min-width:300px;">
+<input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleExcelFileUpload(event)">
+<button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">📤 استيراد ذكي من Excel</button>
+<span id="selectedFileName" style="font-size:0.9em; color:#1a2a6c; font-weight:bold;"></span>
+</div>
+</div>
+</div>
+
 <div class="card">
-<h3>🔍 البحث عن طالب</h3>
+<h3>البحث عن طالب</h3>
 <div class="search-box">
 <input type="text" id="searchStudent" placeholder="رقم الطالب أو الاسم...">
 <button class="btn btn-info" onclick="searchStudent()">بحث</button>
@@ -214,7 +209,7 @@ tr:hover{background:#f8f9fa}
 <!-- Payments -->
 <div id="payments" class="section">
 <div class="card" id="paymentRegisterCard">
-<h3>💵 تسجيل دفعة مالية</h3>
+<h3>تسجيل دفعة مالية</h3>
 <form id="paymentForm" onsubmit="addPayment(event)">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
 <div class="form-group"><label>رقم الطالب</label><input type="text" id="payStuId" required></div>
@@ -223,11 +218,11 @@ tr:hover{background:#f8f9fa}
 <div class="form-group"><label>الفئة</label><select id="payCat"><option value="tuition">قسط دراسي</option><option value="registration">تسجيل</option><option value="fine">غرامة</option></select></div>
 <div class="form-group"><label>طريقة الدفع</label><select id="payMethod"><option value="نقدي">نقدي</option><option value="زين كاش">زين كاش</option><option value="مصرف">مصرف</option><option value="حوالة مصرفية">حوالة مصرفية</option></select></div>
 </div>
-<button type="submit" class="btn btn-success" style="margin-top:15px;">✔ تسجيل الدفع</button>
+<button type="submit" class="btn btn-success" style="margin-top:15px;">تسجيل الدفع</button>
 </form>
 </div>
 <div class="card">
-<h3>📋 كشف حساب طالب</h3>
+<h3>كشف حساب طالب</h3>
 <div class="search-box">
 <input type="text" id="ledgerStuId" placeholder="رقم الطالب (STU-XXXX)">
 <button class="btn btn-info" onclick="showLedger()">عرض الكشف</button>
@@ -239,7 +234,7 @@ tr:hover{background:#f8f9fa}
 <!-- Letters -->
 <div id="letters" class="section">
 <div class="card" id="letterArchiveCard">
-<h3>📜 أرشفة كتاب رسمي جديد</h3>
+<h3>أرشفة كتاب رسمي جديد</h3>
 <form id="letterForm" onsubmit="archiveLetter(event)">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
 <div class="form-group"><label>الرقم الإداري</label><input type="text" id="letNum" placeholder="مثال: ت/412" required></div>
@@ -251,12 +246,12 @@ tr:hover{background:#f8f9fa}
 <div class="form-group"><label>التصنيف</label><select id="letCat"><option value="وزاري">وزاري</option><option value="أمر إداري">أمر إداري</option><option value="تعميم">تعميم</option></select></div>
 </div>
 <div class="form-group"><label>ملخص نص الكتاب</label><textarea id="letSummary" rows="3"></textarea></div>
-<button type="submit" class="btn btn-primary">✔ حفظ وأرشفة</button>
+<button type="submit" class="btn btn-primary">حفظ وأرشفة</button>
 </form>
 </div>
 <div class="card">
-<h3>📚 الأرشيف المركزي</h3>
-<button class="btn btn-info" onclick="loadAllLetters()">🔄 تحديث القائمة</button>
+<h3>الأرشيف المركزي</h3>
+<button class="btn btn-info" onclick="loadAllLetters()">تحديث القائمة</button>
 <div class="table-container" id="lettersTable"></div>
 </div>
 </div>
@@ -264,7 +259,7 @@ tr:hover{background:#f8f9fa}
 <!-- Messages -->
 <div id="messages" class="section">
 <div class="card">
-<h3>✉️ إرسال رسالة داخلية</h3>
+<h3>إرسال رسالة داخلية</h3>
 <form id="messageForm" onsubmit="sendMessage(event)">
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
 <div class="form-group"><label>الجهة المرسلة</label><input type="text" id="msgSender" required></div>
@@ -273,11 +268,11 @@ tr:hover{background:#f8f9fa}
 </div>
 <div class="form-group"><label>الموضوع</label><input type="text" id="msgSubject" required></div>
 <div class="form-group"><label>نص الرسالة</label><textarea id="msgContent" rows="4" required></textarea></div>
-<button type="submit" class="btn btn-primary">✔ إرسال</button>
+<button type="submit" class="btn btn-primary">إرسال</button>
 </form>
 </div>
 <div class="card">
-<h3>📥 صندوق الوارد</h3>
+<h3>صندوق الوارد</h3>
 <div class="search-box">
 <input type="text" id="msgRole" placeholder="المسمى الوظيفي">
 <button class="btn btn-info" onclick="loadMessages()">عرض الرسائل</button>
@@ -289,80 +284,100 @@ tr:hover{background:#f8f9fa}
 <!-- Alerts -->
 <div id="alerts" class="section">
 <div class="card">
-<h3>⚠️ فحص صلاحية النظام والإنذارات المبكرة</h3>
-<button class="btn btn-warning" onclick="runFullCheck()">🔍 تشغيل الفحص الشامل</button>
+<h3>فحص صلاحية النظام والإنذارات المبكرة</h3>
+<button class="btn btn-warning" onclick="runFullCheck()">تشغيل الفحص الشامل</button>
 <div id="alertsResult" style="margin-top:20px;"></div>
 </div>
 </div>
 
 <!-- College View -->
 <div id="collegeView" class="section">
-<div class="view-only-banner">🏛️ وضع المشاهدة فقط - لا يمكن التعديل</div>
+<div class="view-only-banner">وضع المشاهدة فقط - لا يمكن التعديل</div>
 <div class="card">
-<h3>📋 طلاب الكلية المسجلين</h3>
+<h3>طلاب الكلية المسجلين</h3>
 <div id="collegeStudentsList"></div>
 </div>
 <div class="card">
-<h3>📨 رسائل التسجيل الواردة</h3>
+<h3>رسائل التسجيل الواردة</h3>
 <div id="collegeMessages"></div>
 </div>
 <div class="card">
-<h3>📊 إحصائيات الكلية</h3>
+<h3>إحصائيات الكلية</h3>
 <div id="collegeStats"></div>
 </div>
 </div>
 
 <!-- Admin -->
 <div id="admin" class="section">
+<div class="card" style="border-right-color:#ffca28; background: linear-gradient(to left, #ffffff, #fffde7);">
+<h3>إعدادات قاعدة بيانات فايربيس (Firebase Firestore)</h3>
+<div id="firebaseStatusBanner" class="alert alert-warning">جاري فحص حالة الاتصال بـ Firebase...</div>
+<form id="firebaseConfigForm" onsubmit="saveFirebaseConfig(event)">
+<p style="margin-bottom:15px; color:#555; font-size:0.9em;">أدخل مفاتيح مشروع Firebase الخاص بك من وحدة تحكم Firebase (Firebase Console) لتمكين المزامنة الحية والحفظ السحابي الدائم عبر جميع الأجهزة:</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;">
+<div class="form-group"><label>API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy..."></div>
+<div class="form-group"><label>Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="your-app.firebaseapp.com"></div>
+<div class="form-group"><label>Project ID</label><input type="text" id="fbProjectId" placeholder="your-app-id"></div>
+<div class="form-group"><label>Storage Bucket</label><input type="text" id="fbStorageBucket" placeholder="your-app.appspot.com"></div>
+<div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fbMessagingSenderId" placeholder="123456789"></div>
+<div class="form-group"><label>App ID</label><input type="text" id="fbAppId" placeholder="1:123456789:web:abcdef"></div>
+</div>
+<div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+<button type="submit" class="btn btn-warning">حفظ الإعدادات وإعادة الاتصال</button>
+<button type="button" class="btn btn-secondary" onclick="clearFirebaseConfig()">مسح الإعدادات والرجوع لـ SQLite المحلية</button>
+</div>
+</form>
+</div>
+
 <div class="card">
-<h3>🏛️ إدارة الكليات</h3>
+<h3>إدارة الكليات</h3>
 <form id="collegeForm" onsubmit="addCollege(event)">
-<h4 style="margin:20px 0 15px;color:#1a2a6c;">➕ إضافة كلية جديدة</h4>
+<h4 style="margin:20px 0 15px;color:#1a2a6c;">إضافة كلية جديدة</h4>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
 <div class="form-group"><label>رمز الكلية</label><input type="text" id="newCollegeId" placeholder="dentistry" required></div>
 <div class="form-group"><label>اسم الكلية</label><input type="text" id="newCollegeName" placeholder="كلية طب الأسنان" required></div>
 <div class="form-group"><label>الوصف</label><input type="text" id="newCollegeDesc" placeholder="وصف الكلية"></div>
 </div>
-<button type="submit" class="btn btn-success">✔ إضافة كلية</button>
+<button type="submit" class="btn btn-success">إضافة كلية</button>
 </form>
 <div style="margin-top:20px;">
-<h4 style="color:#1a2a6c;margin-bottom:15px;">📋 الكليات المسجلة</h4>
+<h4 style="color:#1a2a6c;margin-bottom:15px;">الكليات المسجلة</h4>
 <div id="collegesList"></div>
 </div>
 </div>
 <div class="card">
-<h3>👥 إدارة الموظفين والمستخدمين</h3>
+<h3>إدارة الموظفين والمستخدمين</h3>
 <div id="adminPermissionNotice"></div>
 <div class="card" style="background:#fff3cd;border-right-color:#ffc107;">
-<h4>🌐 إدارة IP الحاسبات</h4>
+<h4>إدارة IP الحاسبات</h4>
 <p>كمدير نظام، يمكنك:</p>
 <ul style="margin-right:20px;margin-top:10px;">
-<li>✅ <strong>تسجيل الدخول بأي حساب</strong> (تجاوز قيود IP تلقائياً)</li>
+<li>تسجيل الدخول بأي حساب (تجاوز قيود IP تلقائياً)</li>
 <li>تعيين IP لكل حاسبة عند إضافتها أو تعديلها</li>
-<li>تغيير IP أي موظف من جدول الموظفين (زر 🌐)</li>
-<li>الحاسبة <strong>لا تستطيع</strong> الدخول بدون IP مُدخل منك</li>
+<li>تغيير IP أي موظف من جدول الموظفين</li>
+<li>الحاسبة لا تستطيع الدخول بدون IP مُدخل منك</li>
 <li>إذا تركت IP فارغاً، لن يتمكن الحساب من الدخول</li>
 </ul>
 </div>
 <form id="userForm" onsubmit="addUser(event)">
-<h4 style="margin:20px 0 15px;color:#1a2a6c;">➕ إضافة مستخدم جديد</h4>
+<h4 style="margin:20px 0 15px;color:#1a2a6c;">إضافة مستخدم جديد</h4>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
 <div class="form-group"><label>الاسم الكامل</label><input type="text" id="newUserName" required></div>
 <div class="form-group"><label>اسم المستخدم</label><input type="text" id="newUserUsername" required></div>
 <div class="form-group"><label>رمز الدخول</label><input type="text" id="newUserPassword" required></div>
 <div class="form-group"><label>الدور الوظيفي</label><select id="newUserRole" onchange="onRoleChange()" required><option value="">اختر الدور</option><option value="admin">مدير النظام</option><option value="dept_head">رئيس قسم</option><option value="registrar">مدير تسجيل شؤون الطلبة</option><option value="finance_manager">مدير المالية</option><option value="accounting">حاسبة</option><option value="college">كلية (مشاهدة فقط)</option></select></div>
 <div class="form-group"><label>القسم/الكلية</label><select id="newUserDept"><option value="">بدون</option></select></div>
-<div class="form-group"><label>IP الجهاز المسموح (للحاسبة فقط - يُدخل من مدير النظام)</label><input type="text" id="newUserIP" placeholder="192.168.1.100 - يترك فارغاً إذا لم يكن حاسبة"><small style='color:#666;display:block;margin-top:5px;'>⚠️ يتحكم مدير النظام في هذا الحقل - الحاسبة لا تستطيع الدخول بدونه</small></div>
+<div class="form-group"><label>IP الجهاز المسموح (للحاسبة فقط - يُدخل من مدير النظام)</label><input type="text" id="newUserIP" placeholder="192.168.1.100 - يترك فارغاً إذا لم يكن حاسبة"><small style='color:#666;display:block;margin-top:5px;'>يتحكم مدير النظام في هذا الحقل - الحاسبة لا تستطيع الدخول بدونه</small></div>
 </div>
-<button type="submit" class="btn btn-success">✔ إضافة مستخدم</button>
+<button type="submit" class="btn btn-success">إضافة مستخدم</button>
 </form>
 </div>
 <div class="card">
-<h3>🔐 تغيير رموز الدخول</h3>
+<h3>تغيير رموز الدخول</h3>
 <div id="usersList"></div>
 </div>
 <div class="card">
-<h3>📋 سجل العمليات</h3>
+<h3>سجل العمليات</h3>
 <div id="auditLog"></div>
 </div>
 </div>
@@ -385,6 +400,18 @@ let db = null;
 let SQL = null;
 let currentUser = null;
 let userIP = '127.0.0.1';
+
+// Default Firebase Credentials from user project
+const DEFAULT_FIREBASE_CONFIG = {
+  "apiKey": "AIzaSyAPrB5R6G3Upht4ntouV1VAZkbbn2t2tg",
+  "authDomain": "robotic-sky-499915-f5.firebaseapp.com",
+  "projectId": "robotic-sky-499915-f5",
+  "storageBucket": "robotic-sky-499915-f5.firebasestorage.app",
+  "messagingSenderId": "241737282297",
+  "appId": "1:241737282297:web:92e07905c9d5bfeed32828",
+  "databaseURL": "https://robotic-sky-499915-f5-default-rtdb.firebaseio.com",
+  "measurementId": "G-08YCBJNTKY"
+};
 
 // ==================== ROLES ====================
 const ROLES = {
@@ -464,6 +491,157 @@ const ROLES = {
   }
 };
 
+// ==================== FIREBASE INTEGRATION ====================
+let dbFirebase = null;
+let isFirebaseReady = false;
+
+function getFirebaseConfigFromStorage() {
+  try {
+    const saved = localStorage.getItem('ndam_firebase_config');
+    return saved ? JSON.parse(saved) : DEFAULT_FIREBASE_CONFIG;
+  } catch(e) {
+    return DEFAULT_FIREBASE_CONFIG;
+  }
+}
+
+function saveFirebaseConfig(e) {
+  if (e) e.preventDefault();
+  const config = {
+    apiKey: document.getElementById('fbApiKey').value.trim(),
+    authDomain: document.getElementById('fbAuthDomain').value.trim(),
+    projectId: document.getElementById('fbProjectId').value.trim(),
+    storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+    appId: document.getElementById('fbAppId').value.trim()
+  };
+  if (!config.apiKey || !config.projectId) {
+    showAlert('danger', 'يرجى إدخال API Key و Project ID على الأقل');
+    return;
+  }
+  localStorage.setItem('ndam_firebase_config', JSON.stringify(config));
+  showAlert('success', 'تم حفظ إعدادات Firebase! جاري التوصيل السحابي...');
+  initFirebase(config);
+}
+
+function clearFirebaseConfig() {
+  localStorage.removeItem('ndam_firebase_config');
+  isFirebaseReady = false;
+  dbFirebase = null;
+  updateFirebaseUIStatus(false, 'تم إلغاء ربط Firebase والرجوع لقاعدة البيانات المحلية');
+  fillFirebaseConfigForm({apiKey:'',authDomain:'',projectId:'',storageBucket:'',messagingSenderId:'',appId:''});
+  showAlert('info', 'تم مسح إعدادات Firebase والعودة للتخزين المحلي');
+}
+
+function initFirebase(customConfig) {
+  const config = customConfig || getFirebaseConfigFromStorage();
+  fillFirebaseConfigForm(config);
+
+  if (!config || !config.apiKey || !config.projectId) {
+    updateFirebaseUIStatus(false, 'فايربيس غير متصل (يعمل النظام على التخزين المحلي SQL.js)');
+    return;
+  }
+
+  try {
+    if (typeof firebase === 'undefined') {
+      updateFirebaseUIStatus(false, 'تعذر تحميل مكتبة Firebase - تأكد من الاتصال بالإنترنت');
+      return;
+    }
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    dbFirebase = firebase.firestore();
+    isFirebaseReady = true;
+    updateFirebaseUIStatus(true, 'متصل بقاعدة بيانات فايربيس السحابية (' + config.projectId + ')');
+    setupFirebaseRealtimeSync();
+  } catch(err) {
+    console.error('Firebase init error:', err);
+    updateFirebaseUIStatus(false, 'فشل الاتصال بـ Firebase: ' + err.message);
+  }
+}
+
+function updateFirebaseUIStatus(connected, message) {
+  const badgeEl = document.getElementById('fbLoginBadge');
+  const bannerEl = document.getElementById('firebaseStatusBanner');
+  if (badgeEl) {
+    badgeEl.className = connected ? 'alert alert-success' : 'alert alert-warning';
+    badgeEl.innerHTML = connected ? '<strong>فايربيس:</strong> متصل سحابياً (مشروع: ' + (DEFAULT_FIREBASE_CONFIG.projectId) + ')' : '<strong>التخزين:</strong> محلي (SQLite)';
+  }
+  if (bannerEl) {
+    bannerEl.className = connected ? 'alert alert-success' : 'alert alert-warning';
+    bannerEl.innerHTML = message;
+  }
+}
+
+function fillFirebaseConfigForm(config) {
+  if (!config) return;
+  if (document.getElementById('fbApiKey')) document.getElementById('fbApiKey').value = config.apiKey || '';
+  if (document.getElementById('fbAuthDomain')) document.getElementById('fbAuthDomain').value = config.authDomain || '';
+  if (document.getElementById('fbProjectId')) document.getElementById('fbProjectId').value = config.projectId || '';
+  if (document.getElementById('fbStorageBucket')) document.getElementById('fbStorageBucket').value = config.storageBucket || '';
+  if (document.getElementById('fbMessagingSenderId')) document.getElementById('fbMessagingSenderId').value = config.messagingSenderId || '';
+  if (document.getElementById('fbAppId')) document.getElementById('fbAppId').value = config.appId || '';
+}
+
+function syncToFirebase(collectionName, docId, data) {
+  if (!isFirebaseReady || !dbFirebase) return;
+  try {
+    dbFirebase.collection(collectionName).doc(String(docId)).set(data, { merge: true })
+      .catch(err => console.error('Firebase sync error:', collectionName, err));
+  } catch(e) {}
+}
+
+function setupFirebaseRealtimeSync() {
+  if (!isFirebaseReady || !dbFirebase) return;
+
+  const collections = [
+    { name: 'colleges', table: 'colleges' },
+    { name: 'departments', table: 'departments' },
+    { name: 'students', table: 'students' },
+    { name: 'payments', table: 'payments' },
+    { name: 'official_letters', table: 'official_letters' },
+    { name: 'internal_messages', table: 'internal_messages' },
+    { name: 'users', table: 'users' },
+    { name: 'audit_log', table: 'audit_log' }
+  ];
+
+  collections.forEach(col => {
+    try {
+      dbFirebase.collection(col.name).onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data();
+            saveSnapshotToSQLite(col.table, data);
+          }
+        });
+      }, err => console.log('Firestore listener info:', col.name, err));
+    } catch(e) {}
+  });
+}
+
+function saveSnapshotToSQLite(table, data) {
+  if (!db) return;
+  try {
+    if (table === 'colleges') {
+      db.run("INSERT OR REPLACE INTO colleges VALUES (?,?,?,?)", [data.id, data.name, data.description || '', data.created_at || new Date().toISOString()]);
+    } else if (table === 'departments') {
+      db.run("INSERT OR REPLACE INTO departments VALUES (?,?,?,?,?)", [data.id, data.name, data.college_id, data.annual_fee, data.duration]);
+    } else if (table === 'students') {
+      db.run("INSERT OR REPLACE INTO students VALUES (?,?,?,?,?,?,?,?,?,?,?)", [data.id, data.name, data.email||'', data.phone||'', data.national_id||'', data.department_id, data.shift, data.stage||1, data.status||'active', data.reg_date, data.total_fee]);
+    } else if (table === 'payments') {
+      db.run("INSERT OR REPLACE INTO payments VALUES (?,?,?,?,?,?,?)", [data.id, data.student_id, data.amount, data.pay_date, data.receipt_no, data.category, data.method]);
+    } else if (table === 'official_letters') {
+      db.run("INSERT OR REPLACE INTO official_letters VALUES (?,?,?,?,?,?,?,?,?,?)", [data.id, data.letter_number, data.title, data.source, data.destination, data.date_issued, data.expiry_date, data.category, data.summary, data.status||'active']);
+    } else if (table === 'internal_messages') {
+      db.run("INSERT OR REPLACE INTO internal_messages (id,sender,receiver,subject,content,timestamp,priority,is_auto) VALUES (?,?,?,?,?,?,?,?)", [data.id, data.sender, data.receiver, data.subject, data.content, data.timestamp, data.priority||'normal', data.is_auto||0]);
+    } else if (table === 'users') {
+      db.run("INSERT OR REPLACE INTO users (id,full_name,username,password,role,department_id,allowed_ip,is_active,created_at) VALUES (?,?,?,?,?,?,?,?,?)", [data.id, data.full_name, data.username, data.password, data.role, data.department_id||null, data.allowed_ip||null, data.is_active!==undefined?data.is_active:1, data.created_at||new Date().toISOString()]);
+    } else if (table === 'audit_log') {
+      db.run("INSERT OR REPLACE INTO audit_log (id,user_id,action,details,timestamp,ip_address) VALUES (?,?,?,?,?,?)", [data.id, data.user_id, data.action, data.details, data.timestamp, data.ip_address||'']);
+    }
+    updateStats();
+  } catch(e) {}
+}
+
 // ==================== INIT ====================
 async function initDB() {
   try {
@@ -474,10 +652,11 @@ async function initDB() {
     setupTables();
     insertSeedData();
     detectIP();
+    initFirebase();
     console.log('Database initialized');
   } catch (e) {
     console.error('DB init failed:', e);
-    document.getElementById('loginError').textContent = '❌ فشل تحميل قاعدة البيانات';
+    document.getElementById('loginError').textContent = 'فشل تحميل قاعدة البيانات';
   }
 }
 
@@ -564,41 +743,56 @@ function registerStudentDirect(id,name,email,phone,natId,dept,shift,fee,natExpir
     db.run("INSERT OR IGNORE INTO students VALUES (?,?,?,?,?,?,?,1,'active',?,?)", [id,name,email,phone,natId,dept,shift,regDate,fee]);
     if (natExpiry) db.run("INSERT INTO student_documents (student_id,doc_name,provided,expiry_date) VALUES (?,?,1,?)", [id,'البطاقة الوطنية الموحدة',natExpiry]);
     if (medExpiry) db.run("INSERT INTO student_documents (student_id,doc_name,provided,expiry_date) VALUES (?,?,1,?)", [id,'الفحص الطبي السنوي',medExpiry]);
+    syncToFirebase('students', id, { id, name, email, phone, national_id: natId, department_id: dept, shift, stage: 1, status: 'active', reg_date: regDate, total_fee: fee });
   } catch(e) {}
 }
 
 function addPaymentDirect(id,stuId,amount,date,receipt,cat,method) {
-  try { db.run("INSERT OR IGNORE INTO payments VALUES (?,?,?,?,?,?,?)", [id,stuId,amount,date,receipt,cat,method]); } catch(e) {}
+  try {
+    db.run("INSERT OR IGNORE INTO payments VALUES (?,?,?,?,?,?,?)", [id,stuId,amount,date,receipt,cat,method]);
+    syncToFirebase('payments', id, { id, student_id: stuId, amount, pay_date: date, receipt_no: receipt, category: cat, method });
+  } catch(e) {}
 }
 
 function archiveLetterDirect(id,num,title,source,dest,issued,expiry,cat,summary) {
-  try { db.run("INSERT OR IGNORE INTO official_letters VALUES (?,?,?,?,?,?,?,?,?,'active')", [id,num,title,source,dest,issued,expiry,cat,summary]); } catch(e) {}
+  try {
+    db.run("INSERT OR IGNORE INTO official_letters VALUES (?,?,?,?,?,?,?,?,?,'active')", [id,num,title,source,dest,issued,expiry,cat,summary]);
+    syncToFirebase('official_letters', id, { id, letter_number: num, title, source, destination: dest, date_issued: issued, expiry_date: expiry, category: cat, summary, status: 'active' });
+  } catch(e) {}
 }
 
 function sendMessageDirect(sender,receiver,subject,content,priority,isAuto) {
   if (isAuto === undefined) isAuto = 0;
   const timestamp = new Date().toLocaleString('ar-IQ');
-  try { db.run("INSERT INTO internal_messages (sender,receiver,subject,content,timestamp,priority,is_auto) VALUES (?,?,?,?,?,?,?)", [sender,receiver,subject,content,timestamp,priority,isAuto]); } catch(e) {}
+  const msgId = Date.now();
+  try {
+    db.run("INSERT INTO internal_messages (sender,receiver,subject,content,timestamp,priority,is_auto) VALUES (?,?,?,?,?,?,?)", [sender,receiver,subject,content,timestamp,priority,isAuto]);
+    syncToFirebase('internal_messages', msgId, { id: msgId, sender, receiver, subject, content, timestamp, priority, is_auto: isAuto });
+  } catch(e) {}
 }
 
 function addAuditLog(userId,action,details) {
   const timestamp = new Date().toLocaleString('ar-IQ');
-  try { db.run("INSERT INTO audit_log (user_id,action,details,timestamp,ip_address) VALUES (?,?,?,?,?)", [userId,action,details,timestamp,userIP]); } catch(e) {}
+  const logId = Date.now();
+  try {
+    db.run("INSERT INTO audit_log (user_id,action,details,timestamp,ip_address) VALUES (?,?,?,?,?)", [userId,action,details,timestamp,userIP]);
+    syncToFirebase('audit_log', logId, { id: logId, user_id: userId, action, details, timestamp, ip_address: userIP });
+  } catch(e) {}
 }
 
 // ==================== LOGIN ====================
 function doLogin(e) {
-  e.preventDefault();
-  const username = document.getElementById('loginUsername').value;
-  const password = document.getElementById('loginPassword').value;
+  if (e && e.preventDefault) e.preventDefault();
+  const username = (document.getElementById('loginUsername').value || '').trim();
+  const password = (document.getElementById('loginPassword').value || '').trim();
   const errorEl = document.getElementById('loginError');
 
   if (!db) {
-    errorEl.textContent = '❌ قاعدة البيانات غير جاهزة، أعد تحميل الصفحة';
+    errorEl.textContent = 'جاري تحضير قاعدة البيانات، يرجى المحاولة بعد ثوانٍ...';
     return;
   }
 
-  const stmt = db.prepare("SELECT * FROM users WHERE username=? AND password=? AND is_active=1");
+  const stmt = db.prepare("SELECT * FROM users WHERE LOWER(username)=LOWER(?) AND password=? AND is_active=1");
   stmt.bind([username, password]);
   let result = null;
   while (stmt.step()) {
@@ -607,13 +801,13 @@ function doLogin(e) {
   stmt.free();
 
   if (!result) {
-    errorEl.textContent = '❌ اسم المستخدم أو رمز الدخول غير صحيح';
+    errorEl.textContent = 'اسم المستخدم أو رمز الدخول غير صحيح';
     return;
   }
 
   const roleConfig = ROLES[result.role];
   if (!roleConfig) {
-    errorEl.textContent = '❌ دور المستخدم غير معرف في النظام';
+    errorEl.textContent = 'دور المستخدم غير معرف في النظام';
     return;
   }
 
@@ -621,25 +815,25 @@ function doLogin(e) {
 
   if (roleConfig.ipRestricted && !isAdminLogin) {
     if (!result.allowed_ip) {
-      errorEl.textContent = '❌ لم يتم تعيين IP لهذا الحساب من قبل مدير النظام';
+      errorEl.textContent = 'لم يتم تعيين IP لهذا الحساب من قبل مدير النظام';
       return;
     }
     if (userIP !== result.allowed_ip) {
       const ipNotice = document.getElementById('ipNotice');
       ipNotice.classList.remove('hidden');
-      ipNotice.innerHTML = "<div class='alert alert-danger'>🚫 <strong>رفض الدخول:</strong><br>IP المسموح: <strong>" + result.allowed_ip + "</strong><br>IP الحالي: <strong>" + userIP + "</strong><br><br>يرجى الاتصال بمدير النظام لتحديث IP الجهاز</div>";
-      errorEl.textContent = '❌ IP الجهاز غير مطابق - اتصل بمدير النظام';
+      ipNotice.innerHTML = "<div class='alert alert-danger'><strong>رفض الدخول:</strong><br>IP المسموح: <strong>" + result.allowed_ip + "</strong><br>IP الحالي: <strong>" + userIP + "</strong><br><br>يرجى الاتصال بمدير النظام لتحديث IP الجهاز</div>";
+      errorEl.textContent = 'IP الجهاز غير مطابق - اتصل بمدير النظام';
       return;
     }
     const ipNotice = document.getElementById('ipNotice');
     ipNotice.classList.remove('hidden');
-    ipNotice.innerHTML = "<div class='alert alert-success'>✅ <strong>IP مقبول:</strong> " + userIP + "</div>";
+    ipNotice.innerHTML = "<div class='alert alert-success'><strong>IP مقبول:</strong> " + userIP + "</div>";
   }
 
   if (isAdminLogin) {
     const ipNotice = document.getElementById('ipNotice');
     ipNotice.classList.remove('hidden');
-    ipNotice.innerHTML = "<div class='alert alert-success'>👑 <strong>دخول كمدير نظام</strong><br>تم تجاوز جميع القيود - IP الحالي: " + userIP + "</div>";
+    ipNotice.innerHTML = "<div class='alert alert-success'><strong>دخول كمدير نظام</strong><br>تم تجاوز جميع القيود - IP الحالي: " + userIP + "</div>";
   }
 
   currentUser = {
@@ -661,6 +855,7 @@ function doLogin(e) {
   document.getElementById('currentUserName').textContent = result.full_name;
   document.getElementById('currentUserRole').innerHTML = '<span class="role-badge ' + roleConfig.color + '">' + roleConfig.label + '</span>';
   applyPermissions();
+  showSection('dashboard');
   updateStats();
   updateAlertBadge();
 }
@@ -714,12 +909,12 @@ function applyPermissions() {
   }
 
   if (cfg.canManageUsers) {
-    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-success">✅ لديك صلاحيات كاملة لإدارة المستخدمين</div>';
+    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-success">لديك صلاحيات كاملة لإدارة المستخدمين</div>';
     document.getElementById('userForm').style.display = 'block';
     loadUsersList();
     loadAuditLog();
   } else {
-    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-danger">🚫 ليس لديك صلاحية إدارة المستخدمين</div>';
+    document.getElementById('adminPermissionNotice').innerHTML = '<div class="alert alert-danger">ليس لديك صلاحية إدارة المستخدمين</div>';
     document.getElementById('userForm').style.display = 'none';
   }
 
@@ -744,13 +939,19 @@ function showSection(sectionId) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   const target = document.getElementById(sectionId);
   if (target) target.classList.add('active');
-  event.target.classList.add('active');
+  
+  if (typeof event !== 'undefined' && event && event.target && event.target.classList) {
+    event.target.classList.add('active');
+  } else {
+    const activeTab = document.querySelector('.nav-tab[onclick*="' + sectionId + '"]');
+    if (activeTab) activeTab.classList.add('active');
+  }
 }
 
 // ==================== STUDENTS ====================
 function registerStudent(e) {
   e.preventDefault();
-  if (!currentUser || !currentUser.config.canRegisterStudents) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canRegisterStudents) { showAlert('danger','ليس لديك صلاحية'); return; }
   const id = document.getElementById('stuId').value;
   const name = document.getElementById('stuName').value;
   const email = document.getElementById('stuEmail').value;
@@ -763,7 +964,7 @@ function registerStudent(e) {
   const medExpiry = document.getElementById('docMedExpiry').value;
   registerStudentDirect(id,name,email,phone,natId,dept,shift,fee,natExpiry,medExpiry);
   addAuditLog(currentUser.id,'REGISTER_STUDENT','تسجيل: ' + id);
-  showAlert('success','✔ تم تسجيل ' + name);
+  showAlert('success','تم تسجيل ' + name);
   document.getElementById('studentForm').reset();
   updateStats();
 }
@@ -800,10 +1001,284 @@ function loadAllStudents() {
   container.innerHTML = html;
 }
 
+// ==================== EXCEL IMPORT & EXPORT ====================
+let parsedExcelRows = [];
+let excelHeaders = [];
+const SYSTEM_FIELDS = [
+  { key: 'id', label: 'رقم التسجيل (STU-XXXX)', required: true, aliases: ['رقم التسجيل', 'رقم الطالب', 'الرقم', 'id', 'student id', 'كود الطالب', 'تسجيل', 'رمز الطالب'] },
+  { key: 'name', label: 'الاسم الرباعي', required: true, aliases: ['الاسم الرباعي', 'اسم الطالب', 'الاسم', 'name', 'full name', 'الاسم الكامل', 'طالب'] },
+  { key: 'email', label: 'البريد الإلكتروني', required: false, aliases: ['البريد الإلكتروني', 'البريد', 'الإيميل', 'email', 'البريد الاكاديمي'] },
+  { key: 'phone', label: 'رقم الهاتف', required: false, aliases: ['رقم الهاتف', 'الهاتف', 'الموبايل', 'phone', 'mobile', 'الجوال', 'رقم الموبايل'] },
+  { key: 'national_id', label: 'الرقم الوطني', required: false, aliases: ['الرقم الوطني', 'الهوية الوطنية', 'رقم الهوية', 'national id', 'الوطنية', 'هوية'] },
+  { key: 'department_id', label: 'القسم', required: true, aliases: ['القسم', 'اسم القسم', 'department', 'dept', 'الكلية', 'التخصص'] },
+  { key: 'shift', label: 'الدراسة (صباحي / مسائي)', required: false, aliases: ['الدراسة', 'نوع الدراسة', 'الدوام', 'shift', 'الدرجة'] },
+  { key: 'total_fee', label: 'القسط الإجمالي (د.ع)', required: false, aliases: ['القسط الإجمالي', 'القسط', 'المبلغ', 'fee', 'total fee', 'الرسوم', 'الأقساط'] },
+  { key: 'docNatExpiry', label: 'تاريخ انتهاء الوطنية', required: false, aliases: ['تاريخ انتهاء الوطنية', 'تاريخ الوطنية', 'انتهاء الهوية', 'انتهاء الوطنية'] },
+  { key: 'docMedExpiry', label: 'تاريخ انتهاء الفحص الطبي', required: false, aliases: ['تاريخ انتهاء الفحص الطبي', 'تاريخ الفحص الطبي', 'انتهاء الفحص'] }
+];
+
+function exportStudentsToExcel() {
+  if (!db) { showAlert('danger', 'قاعدة البيانات غير جاهزة'); return; }
+  try {
+    const result = db.exec("SELECT s.id, s.name, s.email, s.phone, s.national_id, COALESCE(d.name, s.department_id) as dept_name, s.shift, s.stage, s.total_fee, s.reg_date, s.status FROM students s LEFT JOIN departments d ON s.department_id = d.id ORDER BY s.reg_date DESC");
+    
+    if (!result || result.length === 0 || result[0].values.length === 0) {
+      showAlert('warning', 'لا توجد بيانات طلاب لتصديرها');
+      return;
+    }
+
+    const exportData = result[0].values.map(row => ({
+      'رقم التسجيل': row[0] || '',
+      'الاسم الرباعي': row[1] || '',
+      'البريد الإلكتروني': row[2] || '',
+      'رقم الهاتف': row[3] || '',
+      'الرقم الوطني': row[4] || '',
+      'القسم': row[5] || '',
+      'الدراسة': row[6] || '',
+      'المرحلة': row[7] || 1,
+      'القسط الإجمالي (د.ع)': row[8] || 0,
+      'تاريخ التسجيل': row[9] || '',
+      'الحالة': row[10] === 'active' ? 'نشط' : 'معطل'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'بيانات الطلاب');
+
+    const fileName = 'طلاب_جامعة_الأهلية_' + new Date().toISOString().split('T')[0] + '.xlsx';
+    XLSX.writeFile(workbook, fileName);
+    
+    if (currentUser) addAuditLog(currentUser.id, 'EXPORT_EXCEL', 'تصدير بيانات الطلاب إلى Excel (' + exportData.length + ' طالب)');
+    showAlert('success', 'تم تصدير ' + exportData.length + ' طالب بنجاح إلى ملف Excel');
+  } catch(err) {
+    console.error('Export error:', err);
+    showAlert('danger', 'فشل تصدير الملف: ' + err.message);
+  }
+}
+
+function handleExcelFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fileNameEl = document.getElementById('selectedFileName');
+  if (fileNameEl) fileNameEl.textContent = 'الملف المحدد: ' + file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+
+      const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+      if (!rawData || rawData.length < 2) {
+        showAlert('danger', 'ملف Excel فارغ أو لا يحتوي على صفوف بيانات');
+        return;
+      }
+
+      excelHeaders = rawData[0].map(h => String(h).trim()).filter(h => h !== '');
+      parsedExcelRows = [];
+      for (let i = 1; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (row && row.some(cell => String(cell).trim() !== '')) {
+          const rowObj = {};
+          excelHeaders.forEach((h, idx) => {
+            rowObj[h] = row[idx] !== undefined ? String(row[idx]).trim() : '';
+          });
+          parsedExcelRows.push(rowObj);
+        }
+      }
+
+      if (parsedExcelRows.length === 0) {
+        showAlert('warning', 'لم يتم العثور على بيانات صالحة في ملف Excel');
+        return;
+      }
+
+      showSmartMappingModal();
+    } catch (err) {
+      console.error(err);
+      showAlert('danger', 'حدث خطأ أثناء قراءة ملف Excel: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showSmartMappingModal() {
+  const initialMapping = {};
+  SYSTEM_FIELDS.forEach(sysField => {
+    let matchedHeader = '';
+    for (const h of excelHeaders) {
+      const cleanHeader = h.toLowerCase().replace(/[\s_\-]/g, '');
+      const match = sysField.aliases.some(alias => {
+        const cleanAlias = alias.toLowerCase().replace(/[\s_\-]/g, '');
+        return cleanHeader === cleanAlias || cleanHeader.includes(cleanAlias) || cleanAlias.includes(cleanHeader);
+      });
+      if (match) {
+        matchedHeader = h;
+        break;
+      }
+    }
+    initialMapping[sysField.key] = matchedHeader;
+  });
+
+  renderSmartMappingModalUI(initialMapping);
+}
+
+function renderSmartMappingModalUI(currentMapping) {
+  let html = '<h3 style="color:#1a2a6c;margin-bottom:15px;border-bottom:2px solid #1a2a6c;padding-bottom:10px;">📊 الاستيراد الذكي ومطابقة أعمدة Excel</h3>';
+  html += '<div class="alert alert-info">تم اكتشاف <strong>' + parsedExcelRows.length + '</strong> صفاً في الملف. يرجى مراجعة وتأكيد مطابقة رؤوس الأعمدة أدناه:</div>';
+  
+  html += '<form id="smartImportForm" onsubmit="event.preventDefault(); confirmSmartImport();">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px;max-height:300px;overflow-y:auto;padding-left:10px;">';
+
+  SYSTEM_FIELDS.forEach(sf => {
+    const selectedHeader = currentMapping[sf.key] || '';
+    const isMatched = selectedHeader !== '';
+    html += '<div class="form-group" style="background:#f8f9fa;padding:10px;border-radius:8px;border-right:4px solid ' + (isMatched ? '#28a745' : (sf.required ? '#dc3545' : '#6c757d')) + ';">';
+    html += '<label style="font-size:0.9em;display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span>' + sf.label + (sf.required ? ' <span style="color:#dc3545;">*</span>' : '') + '</span>';
+    html += '<span style="font-size:0.8em;color:' + (isMatched ? '#28a745' : '#888') + ';">' + (isMatched ? '✓ مطابقة تلقائية' : 'غير محدد') + '</span>';
+    html += '</label>';
+    html += '<select id="map_select_' + sf.key + '" onchange="updateImportPreview()" style="margin-top:5px;padding:8px;font-size:0.9em;">';
+    html += '<option value="">-- تجاهل هذا الحقل --</option>';
+    excelHeaders.forEach(h => {
+      const isSel = (h === selectedHeader) ? 'selected' : '';
+      html += '<option value="' + h + '" ' + isSel + '>' + h + '</option>';
+    });
+    html += '</select>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<h4>معاينة أولية للبيانات التي سيتم استيرادها:</h4>';
+  html += '<div id="importPreviewContainer" style="margin-top:10px;margin-bottom:20px;"></div>';
+
+  html += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:15px;">';
+  html += '<button type="submit" class="btn btn-success" style="padding:10px 25px;">✔️ تأكيد واستيراد (' + parsedExcelRows.length + ') طالب</button>';
+  html += '</div>';
+  html += '</form>';
+
+  showModal(html);
+  updateImportPreview();
+}
+
+function updateImportPreview() {
+  const container = document.getElementById('importPreviewContainer');
+  if (!container) return;
+
+  const currentMapping = {};
+  SYSTEM_FIELDS.forEach(sf => {
+    const sel = document.getElementById('map_select_' + sf.key);
+    currentMapping[sf.key] = sel ? sel.value : '';
+  });
+
+  const previewRows = parsedExcelRows.slice(0, 5);
+  let html = '<div class="table-container"><table><tr>';
+  SYSTEM_FIELDS.forEach(sf => {
+    html += '<th>' + sf.label.split(' ')[0] + '</th>';
+  });
+  html += '</tr>';
+
+  previewRows.forEach(row => {
+    html += '<tr>';
+    SYSTEM_FIELDS.forEach(sf => {
+      const mappedHeader = currentMapping[sf.key];
+      const val = mappedHeader ? row[mappedHeader] : '-';
+      html += '<td>' + (val || '-') + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</table></div>';
+  if (parsedExcelRows.length > 5) {
+    html += '<p style="font-size:0.85em;color:#666;margin-top:5px;text-align:center;">... وهناك ' + (parsedExcelRows.length - 5) + ' صفوف أخرى سيتم استيرادها.</p>';
+  }
+
+  container.innerHTML = html;
+}
+
+function confirmSmartImport() {
+  if (!currentUser || !currentUser.config.canRegisterStudents) {
+    showAlert('danger', 'ليس لديك صلاحية تسجيل طلاب');
+    return;
+  }
+
+  const finalMapping = {};
+  SYSTEM_FIELDS.forEach(sf => {
+    const sel = document.getElementById('map_select_' + sf.key);
+    finalMapping[sf.key] = sel ? sel.value : '';
+  });
+
+  const deptResult = db.exec("SELECT id, name FROM departments");
+  const depts = (deptResult && deptResult.length > 0) ? deptResult[0].values : [];
+
+  let importedCount = 0;
+  let updatedCount = 0;
+  let skippedCount = 0;
+
+  parsedExcelRows.forEach((excelRow, idx) => {
+    let id = finalMapping.id && excelRow[finalMapping.id] ? excelRow[finalMapping.id] : '';
+    let name = finalMapping.name && excelRow[finalMapping.name] ? excelRow[finalMapping.name] : '';
+
+    if (!id && name) {
+      id = 'STU-' + (1000 + Math.floor(Math.random() * 8999)) + '-' + (idx + 1);
+    }
+
+    if (!id || !name) {
+      skippedCount++;
+      return;
+    }
+
+    let email = finalMapping.email ? excelRow[finalMapping.email] : '';
+    let phone = finalMapping.phone ? excelRow[finalMapping.phone] : '';
+    let natId = finalMapping.national_id ? excelRow[finalMapping.national_id] : '';
+    let deptInput = finalMapping.department_id ? excelRow[finalMapping.department_id] : '';
+    let shift = finalMapping.shift ? excelRow[finalMapping.shift] : 'صباحي';
+    let feeStr = finalMapping.total_fee ? excelRow[finalMapping.total_fee] : '0';
+    let fee = parseInt(String(feeStr).replace(/[^0-9]/g, '')) || 0;
+    let natExpiry = finalMapping.docNatExpiry ? excelRow[finalMapping.docNatExpiry] : '';
+    let medExpiry = finalMapping.docMedExpiry ? excelRow[finalMapping.docMedExpiry] : '';
+
+    let matchedDeptId = depts.length > 0 ? depts[0][0] : 'dentistry';
+    if (deptInput) {
+      const foundDept = depts.find(d => 
+        String(d[0]).toLowerCase() === String(deptInput).toLowerCase() || 
+        String(d[1]).toLowerCase().includes(String(deptInput).toLowerCase()) || 
+        String(deptInput).toLowerCase().includes(String(d[1]).toLowerCase())
+      );
+      if (foundDept) matchedDeptId = foundDept[0];
+    }
+
+    const checkStmt = db.prepare("SELECT COUNT(*) FROM students WHERE id=?");
+    checkStmt.bind([id]);
+    let exists = false;
+    if (checkStmt.step()) {
+      exists = checkStmt.getAsObject()['COUNT(*)'] > 0;
+    }
+    checkStmt.free();
+
+    registerStudentDirect(id, name, email, phone, natId, matchedDeptId, shift, fee, natExpiry, medExpiry);
+
+    if (exists) updatedCount++;
+    else importedCount++;
+  });
+
+  addAuditLog(currentUser.id, 'IMPORT_EXCEL', 'استيراد ذكي لـ ' + (importedCount + updatedCount) + ' طالب من Excel');
+  closeModal();
+
+  const fileInput = document.getElementById('excelFileInput');
+  if (fileInput) fileInput.value = '';
+  const selectedFileNameEl = document.getElementById('selectedFileName');
+  if (selectedFileNameEl) selectedFileNameEl.textContent = '';
+
+  showAlert('success', 'تم الاستيراد بنجاح! تم إدخال ' + importedCount + ' طالب جديد وتحديث ' + updatedCount + ' طالب' + (skippedCount > 0 ? ' (تجاوز ' + skippedCount + ' صف غير مكتمل)' : ''));
+  loadAllStudents();
+  updateStats();
+}
+
 // ==================== PAYMENTS ====================
 function addPayment(e) {
   e.preventDefault();
-  if (!currentUser || !currentUser.config.canAddPayments) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canAddPayments) { showAlert('danger','ليس لديك صلاحية'); return; }
   const payId = 'PAY-' + Date.now().toString().slice(-6);
   const stuId = document.getElementById('payStuId').value;
   const amount = parseInt(document.getElementById('payAmount').value);
@@ -812,12 +1287,12 @@ function addPayment(e) {
   const method = document.getElementById('payMethod').value;
   const payDate = new Date().toISOString().split('T')[0];
   try {
-    db.run("INSERT INTO payments VALUES (?,?,?,?,?,?,?)", [payId,stuId,amount,payDate,receipt,cat,method]);
+    addPaymentDirect(payId,stuId,amount,payDate,receipt,cat,method);
     addAuditLog(currentUser.id,'ADD_PAYMENT','دفع: ' + payId + ' - ' + amount + ' د.ع');
-    showAlert('success','✔ تم تسجيل الوصل ' + receipt);
+    showAlert('success','تم تسجيل الوصل ' + receipt);
     document.getElementById('paymentForm').reset();
     updateStats();
-  } catch(e) { showAlert('danger','❌ خطأ'); }
+  } catch(e) { showAlert('danger','خطأ'); }
 }
 
 function getStudentLedger(stuId) {
@@ -839,7 +1314,7 @@ function showLedger() {
   const ledger = getStudentLedger(stuId);
   const student = db.exec("SELECT name FROM students WHERE id='" + stuId + "'");
   const stuName = student && student.length > 0 ? student[0].values[0][0] : stuId;
-  let html = '<h3>📋 كشف حساب: ' + stuName + '</h3><div class="ledger-summary"><div class="ledger-box"><h4>القسط المطلوب</h4><div class="amount">' + ledger.total.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المسدد</h4><div class="amount">' + ledger.paid.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المتبقي</h4><div class="amount" style="color:' + (ledger.remaining > 0 ? '#dc3545' : '#28a745') + '">' + ledger.remaining.toLocaleString() + ' د.ع</div></div></div>';
+  let html = '<h3>كشف حساب: ' + stuName + '</h3><div class="ledger-summary"><div class="ledger-box"><h4>القسط المطلوب</h4><div class="amount">' + ledger.total.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المسدد</h4><div class="amount">' + ledger.paid.toLocaleString() + ' د.ع</div></div><div class="ledger-box"><h4>المتبقي</h4><div class="amount" style="color:' + (ledger.remaining > 0 ? '#dc3545' : '#28a745') + '">' + ledger.remaining.toLocaleString() + ' د.ع</div></div></div>';
   if (ledger.payments.length > 0) {
     html += '<div class="table-container"><table><tr><th>الوصل</th><th>المبلغ</th><th>التاريخ</th><th>الفئة</th><th>الطريقة</th></tr>';
     ledger.payments.forEach(p => { html += '<tr><td>' + p.receipt + '</td><td>' + p.amount.toLocaleString() + '</td><td>' + p.date + '</td><td>' + p.cat + '</td><td>' + p.method + '</td></tr>'; });
@@ -851,7 +1326,7 @@ function showLedger() {
 // ==================== LETTERS ====================
 function archiveLetter(e) {
   e.preventDefault();
-  if (!currentUser || !currentUser.config.canArchiveLetters) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canArchiveLetters) { showAlert('danger','ليس لديك صلاحية'); return; }
   const letId = 'LET-' + Date.now().toString().slice(-6);
   const num = document.getElementById('letNum').value;
   const title = document.getElementById('letTitle').value;
@@ -863,7 +1338,7 @@ function archiveLetter(e) {
   const summary = document.getElementById('letSummary').value;
   archiveLetterDirect(letId,num,title,source,dest,issued,expiry,cat,summary);
   addAuditLog(currentUser.id,'ARCHIVE_LETTER','أرشفة: ' + letId);
-  showAlert('success','✔ تم الأرشفة بنجاح');
+  showAlert('success','تم الأرشفة بنجاح');
   document.getElementById('letterForm').reset();
   loadAllLetters();
   updateStats();
@@ -895,7 +1370,7 @@ function sendMessage(e) {
   const priority = document.getElementById('msgPriority').value;
   sendMessageDirect(sender,receiver,subject,content,priority);
   if (currentUser) addAuditLog(currentUser.id,'SEND_MESSAGE','رسالة إلى: ' + receiver);
-  showAlert('success','✔ تم الإرسال');
+  showAlert('success','تم الإرسال');
   document.getElementById('messageForm').reset();
   updateStats();
 }
@@ -920,23 +1395,23 @@ function loadMessages() {
 // ==================== ALERTS ====================
 function runFullCheck() {
   const today = new Date().toISOString().split('T')[0];
-  let html = '<div class="alert alert-info">📅 تاريخ النظام: ' + today + '</div>';
+  let html = '<div class="alert alert-info">تاريخ النظام: ' + today + '</div>';
 
   const expiredDocs = db.exec("SELECT s.id,s.name,sd.doc_name,sd.expiry_date FROM student_documents sd JOIN students s ON sd.student_id=s.id WHERE sd.provided=1 AND sd.expiry_date IS NOT NULL AND sd.expiry_date<'" + today + "'");
-  html += '<h4>⚠️ وثائق منتهية الصلاحية</h4>';
+  html += '<h4>وثائق منتهية الصلاحية</h4>';
   if (expiredDocs && expiredDocs.length > 0 && expiredDocs[0].values.length > 0) {
     html += '<div class="table-container"><table><tr><th>الطالب</th><th>الوثيقة</th><th>الانتهاء</th></tr>';
     expiredDocs[0].values.forEach(d => { html += '<tr><td>' + d[1] + ' (' + d[0] + ')</td><td class="status-expired">' + d[2] + '</td><td>' + d[3] + '</td></tr>'; });
     html += '</table></div>';
-  } else { html += '<div class="alert alert-success">✔ لا توجد وثائق منتهية</div>'; }
+  } else { html += '<div class="alert alert-success">لا توجد وثائق منتهية</div>'; }
 
   const expiredLetters = db.exec("SELECT id,letter_number,title,expiry_date FROM official_letters WHERE expiry_date IS NOT NULL AND expiry_date<'" + today + "'");
-  html += '<h4>⚠️ كتب رسمية منتهية</h4>';
+  html += '<h4>كتب رسمية منتهية</h4>';
   if (expiredLetters && expiredLetters.length > 0 && expiredLetters[0].values.length > 0) {
     html += '<div class="table-container"><table><tr><th>الكود</th><th>الرقم</th><th>الموضوع</th><th>الانتهاء</th></tr>';
     expiredLetters[0].values.forEach(l => { html += '<tr><td>' + l[0] + '</td><td>' + l[1] + '</td><td>' + l[2] + '</td><td class="status-expired">' + l[3] + '</td></tr>'; });
     html += '</table></div>';
-  } else { html += '<div class="alert alert-success">✔ جميع الكتب فعالة</div>'; }
+  } else { html += '<div class="alert alert-success">جميع الكتب فعالة</div>'; }
 
   document.getElementById('alertsResult').innerHTML = html;
   updateAlertBadge();
@@ -966,7 +1441,7 @@ function loadCollegeView() {
     let html = '';
     msgResult[0].values.forEach(m => {
       const isAuto = m[5] === 1;
-      html += '<div class="message-card ' + (isAuto ? 'auto-msg' : '') + '"><div class="message-header"><span>من: ' + m[0] + '</span><span>' + m[3] + ' | الأولوية: ' + m[4] + (isAuto ? ' | 🤖 تلقائية' : '') + '</span></div><h4>' + m[1] + '</h4><p>' + m[2] + '</p></div>';
+      html += '<div class="message-card ' + (isAuto ? 'auto-msg' : '') + '"><div class="message-header"><span>من: ' + m[0] + '</span><span>' + m[3] + ' | الأولوية: ' + m[4] + '</span></div><h4>' + m[1] + '</h4><p>' + m[2] + '</p></div>';
     });
     msgContainer.innerHTML = html;
   } else {
@@ -984,18 +1459,19 @@ function loadCollegeView() {
 // ==================== ADMIN ====================
 function addCollege(e) {
   e.preventDefault();
-  if (!currentUser || !currentUser.config.canManageColleges) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canManageColleges) { showAlert('danger','ليس لديك صلاحية'); return; }
   const id = document.getElementById('newCollegeId').value;
   const name = document.getElementById('newCollegeName').value;
   const desc = document.getElementById('newCollegeDesc').value;
   const now = new Date().toISOString();
   try {
     db.run("INSERT INTO colleges VALUES (?,?,?,?)", [id,name,desc,now]);
+    syncToFirebase('colleges', id, { id, name, description: desc, created_at: now });
     addAuditLog(currentUser.id,'ADD_COLLEGE','إضافة كلية: ' + name + ' (' + id + ')');
-    showAlert('success','✔ تم إضافة ' + name);
+    showAlert('success','تم إضافة ' + name);
     document.getElementById('collegeForm').reset();
     loadCollegesList();
-  } catch(e) { showAlert('danger','❌ رمز الكلية مكرر'); }
+  } catch(e) { showAlert('danger','رمز الكلية مكرر'); }
 }
 
 function loadCollegesList() {
@@ -1011,7 +1487,7 @@ function loadCollegesList() {
 
 function addUser(e) {
   e.preventDefault();
-  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','ليس لديك صلاحية'); return; }
   const name = document.getElementById('newUserName').value;
   const username = document.getElementById('newUserUsername').value;
   const password = document.getElementById('newUserPassword').value;
@@ -1019,13 +1495,15 @@ function addUser(e) {
   const dept = document.getElementById('newUserDept').value;
   const ip = document.getElementById('newUserIP').value;
   const now = new Date().toISOString();
+  const userId = Date.now();
   try {
-    db.run("INSERT INTO users (full_name,username,password,role,department_id,allowed_ip,created_at) VALUES (?,?,?,?,?,?,?)", [name,username,password,role,dept || null,ip || null,now]);
+    db.run("INSERT INTO users (id,full_name,username,password,role,department_id,allowed_ip,created_at) VALUES (?,?,?,?,?,?,?,?)", [userId,name,username,password,role,dept || null,ip || null,now]);
+    syncToFirebase('users', userId, { id: userId, full_name: name, username, password, role, department_id: dept || null, allowed_ip: ip || null, is_active: 1, created_at: now });
     addAuditLog(currentUser.id,'ADD_USER','إضافة: ' + username + ' - ' + name);
-    showAlert('success','✔ تم إضافة ' + name);
+    showAlert('success','تم إضافة ' + name);
     document.getElementById('userForm').reset();
     loadUsersList();
-  } catch(e) { showAlert('danger','❌ اسم المستخدم مكرر'); }
+  } catch(e) { showAlert('danger','اسم المستخدم مكرر'); }
 }
 
 function onRoleChange() {
@@ -1044,19 +1522,20 @@ function loadUsersList() {
   result[0].values.forEach(u => {
     const roleLabel = ROLES[u[3]] ? ROLES[u[3]].label : u[3];
     const isActive = u[6] === 1;
-    html += '<tr><td>' + u[1] + '</td><td>' + u[2] + '</td><td><span class="role-badge ' + (ROLES[u[3]] ? ROLES[u[3]].color : '') + '">' + roleLabel + '</span></td><td>' + (u[4] || '-') + '</td><td>' + (u[5] || '-') + '</td><td class="' + (isActive ? 'status-active' : 'status-expired') + '">' + (isActive ? 'نشط' : 'معطل') + '</td><td><button class="btn btn-warning" onclick="changePassword(' + u[0] + ','' + u[1] + '')" style="padding:5px 10px;font-size:0.8em;">🔐 رمز</button> <button class="btn btn-info" onclick="changeUserIP(' + u[0] + ','' + u[1] + '','' + (u[5] || '') + '')" style="padding:5px 10px;font-size:0.8em;">🌐 IP</button> <button class="btn btn-danger" onclick="toggleUser(' + u[0] + ',' + u[6] + ')" style="padding:5px 10px;font-size:0.8em;">' + (isActive ? 'تعطيل' : 'تفعيل') + '</button></td></tr>';
+    html += '<tr><td>' + u[1] + '</td><td>' + u[2] + '</td><td><span class="role-badge ' + (ROLES[u[3]] ? ROLES[u[3]].color : '') + '">' + roleLabel + '</span></td><td>' + (u[4] || '-') + '</td><td>' + (u[5] || '-') + '</td><td class="' + (isActive ? 'status-active' : 'status-expired') + '">' + (isActive ? 'نشط' : 'معطل') + '</td><td><button class="btn btn-warning" onclick="changePassword(' + u[0] + ',\'' + u[1] + '\')" style="padding:5px 10px;font-size:0.8em;">رمز</button> <button class="btn btn-info" onclick="changeUserIP(' + u[0] + ',\'' + u[1] + '\',\'' + (u[5] || '') + '\')" style="padding:5px 10px;font-size:0.8em;">IP</button> <button class="btn btn-danger" onclick="toggleUser(' + u[0] + ',' + u[6] + ')" style="padding:5px 10px;font-size:0.8em;">' + (isActive ? 'تعطيل' : 'تفعيل') + '</button></td></tr>';
   });
   html += '</table></div>';
   container.innerHTML = html;
 }
 
 function changePassword(userId,userName) {
-  if (!currentUser || !currentUser.config.canChangePasswords) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
+  if (!currentUser || !currentUser.config.canChangePasswords) { showAlert('danger','ليس لديك صلاحية'); return; }
   const newPass = prompt('أدخل رمز الدخول الجديد للمستخدم: ' + userName);
   if (!newPass) return;
   db.run("UPDATE users SET password=? WHERE id=?", [newPass,userId]);
+  syncToFirebase('users', userId, { password: newPass });
   addAuditLog(currentUser.id,'CHANGE_PASSWORD','تغيير رمز: ' + userName);
-  showAlert('success','✔ تم تغيير رمز ' + userName);
+  showAlert('success','تم تغيير رمز ' + userName);
   loadUsersList();
 }
 
@@ -1064,21 +1543,19 @@ function toggleUser(userId,currentStatus) {
   if (!currentUser || !currentUser.config.canManageUsers) return;
   const newStatus = currentStatus === 1 ? 0 : 1;
   db.run("UPDATE users SET is_active=? WHERE id=?", [newStatus,userId]);
+  syncToFirebase('users', userId, { is_active: newStatus });
   addAuditLog(currentUser.id,'TOGGLE_USER',(newStatus === 1 ? 'تفعيل' : 'تعطيل') + ' ID:' + userId);
   loadUsersList();
 }
 
 function changeUserIP(userId,userName,currentIP) {
-  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','🚫 ليس لديك صلاحية'); return; }
-  const newIP = prompt('تغيير IP المستخدم: ' + userName + '
-
-IP الحالي: ' + (currentIP || 'غير محدد') + '
-
-أدخل IP الجديد (اتركه فارغاً لإزالة القيد):', currentIP || '');
+  if (!currentUser || !currentUser.config.canManageUsers) { showAlert('danger','ليس لديك صلاحية'); return; }
+  const newIP = prompt('تغيير IP المستخدم: ' + userName + '\n\nIP الحالي: ' + (currentIP || 'غير محدد') + '\n\nأدخل IP الجديد (اتركه فارغاً لإزالة القيد):', currentIP || '');
   if (newIP === null) return;
   db.run("UPDATE users SET allowed_ip=? WHERE id=?", [newIP || null,userId]);
+  syncToFirebase('users', userId, { allowed_ip: newIP || null });
   addAuditLog(currentUser.id,'CHANGE_IP','تغيير IP ' + userName + ' إلى: ' + (newIP || 'بدون'));
-  showAlert('success','✔ تم تحديث IP ' + userName);
+  showAlert('success','تم تحديث IP ' + userName);
   loadUsersList();
 }
 
@@ -1111,11 +1588,11 @@ function updateDashboardAlerts() {
   let html = '';
   const expiredDocs = db.exec("SELECT COUNT(*) FROM student_documents WHERE provided=1 AND expiry_date<'" + today + "'");
   const docCount = expiredDocs && expiredDocs.length > 0 ? expiredDocs[0].values[0][0] : 0;
-  if (docCount > 0) html += '<div class="alert alert-danger">⚠️ ' + docCount + ' وثيقة منتهية الصلاحية</div>';
+  if (docCount > 0) html += '<div class="alert alert-danger">' + docCount + ' وثيقة منتهية الصلاحية</div>';
   const expiredLets = db.exec("SELECT COUNT(*) FROM official_letters WHERE expiry_date<'" + today + "'");
   const letCount = expiredLets && expiredLets.length > 0 ? expiredLets[0].values[0][0] : 0;
-  if (letCount > 0) html += '<div class="alert alert-warning">⚠️ ' + letCount + ' كتاب رسمي منتهي</div>';
-  if (html === '') html = '<div class="alert alert-success">✔ النظام يعمل بكفاءة - لا توجد إنذارات</div>';
+  if (letCount > 0) html += '<div class="alert alert-warning">' + letCount + ' كتاب رسمي منتهي</div>';
+  if (html === '') html = '<div class="alert alert-success">النظام يعمل بكفاءة - لا توجد إنذارات</div>';
   document.getElementById('dashboardAlerts').innerHTML = html;
 }
 
